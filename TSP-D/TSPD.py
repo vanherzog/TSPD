@@ -15,4 +15,4 @@ class TSPD:
 
     def randomGenerator(self, places):
         return random.shuffle(places)
-        #hat geklappt
+        #perfekt
