@@ -1,14 +1,12 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import math
  
  
 def plot_weighted_graph(node_list,pos):
     
-    #Graph obj 
-    #TODO : zufällig nodelist
-    # kanten setzen
-    # länge bestimmen 
+
     G = nx.Graph() 
     
     #random nodelist
@@ -16,45 +14,42 @@ def plot_weighted_graph(node_list,pos):
     copy=node_list.copy()
     depot=copy[:1]
     copy=copy[1:]
-    while True:
-        leave=False
-        np.random.shuffle(copy)
-        copy.insert(len(copy),depot[0])
-        for x in (0,len(node_list)-1):
-            if copy[x]==node_list[x]:
-                break
-            if x<len(node_list)-1:
-                node_list[x+1]=copy[x]
-            if x==len(copy)-1:
-                leave=True
-        if leave:
-            break
 
-    print(node_list)
-    print(copy)
+    np.random.shuffle(copy)
+    copy.insert(len(copy),depot[0])
+    for x in range (1,len(node_list)):
+        node_list[x]=copy[x-1]
 
-
-
+    #add nodes and edges in graph
     for node,node2 in zip(node_list,copy):
         G.add_node(node,pos=pos[node])
         G.add_edges_from([(node,node2)])
 
-    #G.add_weighted_edges_from([('Depot','A',12),('Depot','B',13)])
-    #elarge = [(d) for (u, v, d) in G.edges(data=True)]
-    #print(elarge)
+    #edge range
+    pos1=[]
+    pos2=[]
+    weite=[]
+    for counter in range(len(copy)):
+        pos1.insert(counter,pos[node_list[counter]])
+        pos2.insert(counter,pos[copy[counter]])
+        weite.insert(counter,math.hypot(round(abs(  pos1[counter][0]-pos2[counter][0]  ),1),round(abs( pos1[counter][1]-pos2[counter][1] ),1)))
+    for counter in range (len(weite)):
+        weite[counter]=round(weite[counter],1)
+        nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list[counter],copy[counter]):weite[counter]})
+
+    #draws
     nx.draw_networkx_nodes(G,pos)
     nx.draw_networkx_labels(G,pos,font_size=10, font_family="sans-serif")
     nx.draw_networkx_edges(G,pos)
+    nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list[counter],copy[counter]):weite[counter]})
     
     plt.draw()
     plt.show()
-    #labels = {}
-    # for node_name in node_list:
-    #     labels[str(node_name)] =str(node_name)
-    # nx.draw_networkx_labels(G,pos,labels,font_size=16)
+    return weite
 
 
 node_list = ['Depot','A','B','C','D','E','F']
-pos={'Depot':(0,0),'A':(220,20),'B':(270,70),'C':(250,210),'D':(90,100),'E':(120,110),'F':(50,220)}
+pos={'Depot':(0,0),'A':(220,20),'B':(270,70),'C':(250,210),'D':(90,60),'E':(120,120),'F':(50,220)}
 
-plot_weighted_graph(node_list,pos)
+values=plot_weighted_graph(node_list,pos)
+print(values)
