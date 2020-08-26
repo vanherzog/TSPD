@@ -49,11 +49,76 @@ def plot_weighted_graph(node_list,pos):
     print(node_list)
     print(weite)
 
+    
+
     return weite,node_list
 
-node_list = ['Depot','A','B','C','D','E','F'] #vlt besser einfach die Anzahl an Punkten übergeben
-pos={'Depot':(0,0),'A':(220,20),'B':(270,70),'C':(250,210),'D':(90,60),'E':(120,120),'F':(50,220)}
 
-values,node_list=plot_weighted_graph(node_list,pos)
+def umschreiben(node_list):
+
+    numbers = []
+    for letter in node_list:
+        number = ord(letter) - 64
+        numbers.append(number)
+    x = numbers.index(24)
+    numbers[x] = 0
+
+    print(numbers)
+    return numbers
+
+
+def hilfsgraph(weite, numbers):
+    
+    ha = np.zeros(shape=(len(numbers),len(numbers)))
+
+    for i in range (len(numbers)):
+        for j in range (len(numbers)):
+            ha[i][j] = None
+
+    for i in range (len(numbers)-1):
+        ha[numbers[i]][numbers[i+1]]=weite[i]
+    ha[numbers[-1]][numbers[0]] = weite[-1]
+
+    print(ha)
+    return ha
+
+
+def abstaende(numbers):
+    ab = np.zeros(shape=(len(numbers),len(numbers)))
+
+    for i in range (len(numbers)):
+        for j in range (len(numbers)):
+            ab[i][j] = None
+
+    xcoord=[]
+    ycoord=[]
+    for x in range (len(numbers)):
+        xcoord.insert(x,posnumbers[str(x)][0])
+        ycoord.insert(x,posnumbers[str(x)][1])
+
+    print('coord')
+    print(xcoord)
+    print(ycoord)
+    
+    for a in range (len(numbers)):
+        for b in range (len(numbers)):
+            ab[a][b]= round(math.hypot( round(abs( xcoord[a]-xcoord[b]  ),1) ,round(abs(  ycoord[a]-ycoord[b] ),1) ),1)
+    return ab
+    
+
+
+
+
+
+node_list = ['X','A','B','C','D','E','F'] 
+pos={'X':(0,0),'A':(220,20),'B':(270,70),'C':(250,210),'D':(90,60),'E':(120,120),'F':(50,220)}
+posnumbers={'0':(0,0),'1':(220,20),'2':(270,70),'3':(250,210),'4':(90,60),'5':(120,120),'6':(50,220)}
+
+weite,node_list=plot_weighted_graph(node_list,pos)
+numbers=umschreiben(node_list)
+ha = hilfsgraph(weite,numbers)
+ab= abstaende(numbers)
+print(ab)
+
 
 

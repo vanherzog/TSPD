@@ -1,22 +1,24 @@
-import random
+import matplotlib.pyplot as plt
+import networkx as nx
+import numpy as np
+import math
+ 
 
-class TSPD:
-    def grasp(self):
-        bestSolution = None
-        places = 0 #List of all places
-        bestObjectiveValue = [] #List of possible Drone deliveries and costs
-        randomGenerator = self.randomGenerator(places)
-        iteration = 0
 
-        while(iteration < 100): #nTSP für 100
-            iteration = iteration + 1
-            tour = self.randomGenerator(places)
-            #(P,V,T) = Split-Algorithm_Step1(tour)
-            #tspdSolution = Split_Algorithm_Step2(P,V,T)
-            #tspdSolution = local_Search(tspdSolution)
-            
-    def randomGenerator(self, places):
-        return random.shuffle(places)
-        #hallo
-        #haluzltohz
-        #hallo 3
+    
+N=2
+G=nx.grid_2d_graph(N,N)
+inds=labels.keys()
+vals=labels.values()
+plt.figure()
+nx.draw_networkx(G, pos=pos2, with_labels=True, node_size = 200)
+
+plt.draw()
+plt.show()
+
+#pos = dict( (n, n) for n in G.nodes() )
+#labels = dict( [(1,'111'), (2,'222'), (3,'333'),(4,'444')])
+#nx.relabel_nodes(G,labels,False)
+#inds=labels.keys()
+#vals=labels.values()
+#pos2=dict(zip(vals,inds))
