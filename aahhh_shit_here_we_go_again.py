@@ -42,14 +42,18 @@ def plot_weighted_graph(node_list,pos):
     nx.draw_networkx_labels(G,pos,font_size=10, font_family="sans-serif")
     nx.draw_networkx_edges(G,pos)
     nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list[counter],copy[counter]):weite[counter]})
+
     
     plt.draw()
     plt.show()
-    return weite
+    print(node_list)
+    print(weite)
 
+    return weite,node_list
 
-node_list = ['Depot','A','B','C','D','E','F']
+node_list = ['Depot','A','B','C','D','E','F'] #vlt besser einfach die Anzahl an Punkten übergeben
 pos={'Depot':(0,0),'A':(220,20),'B':(270,70),'C':(250,210),'D':(90,60),'E':(120,120),'F':(50,220)}
 
-values=plot_weighted_graph(node_list,pos)
-print(values)
+values,node_list=plot_weighted_graph(node_list,pos)
+
+
