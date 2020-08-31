@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import math
+import pandas
  
  
 def plot_weighted_graph(node_list,pos):
@@ -45,13 +46,12 @@ def plot_weighted_graph(node_list,pos):
     nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list[counter],copy[counter]):weite[counter]})
 
     weite.insert(len(weite),None)
-    #plt.draw()
-    #plt.show()
+    # plt.draw()
+    # plt.show()
     print(node_list)
     print(weite)
 
     
-
     return weite,node_list
 
 
@@ -73,14 +73,26 @@ def umschreiben(node_list):
 
 
 def hilfsgraph(weite, numbers, ab):
-    
+    #Kleinste Knoten Matrix, mit den jeweiligen nähesten j zu i und k
+    jKnotenM = np.zeros(shape=(len(numbers),len(numbers)))
+    #initialisierung
+    kk = None
+
     #none setzen array
+    #Hilfsabstandsmatrix
     ha = np.zeros(shape=(len(numbers),len(numbers)))
+    #Kostenmatrix
+    kostenM = np.zeros(shape=(len(numbers),len(numbers)))
     print(len(ha[0]))
     print(len(ha))
     for i in range (len(numbers)):
         for j in range (len(numbers)):
             ha[i][j] = None
+            kostenM[i][j] = None
+            jKnotenM[i][j] = None
+
+    
+    #kostenM = ha
 
     #befüllen der Grade
     for i in range (len(numbers)-1):
@@ -97,21 +109,32 @@ def hilfsgraph(weite, numbers, ab):
             #dt ist der weg vom temporären j
             d = 399
             dt = 400
+            c = 400
+            ct = 399
             for j in range(i+1, len(numbers)):
                 if(numbers[j] == numbers[k]):
                     break
-                #addieren beider dronenrouten
-                dt = ab[numbers[i]][numbers[j]] + ab[numbers[j]][numbers[k]] # +Kostenberechnung
-                if(dt<d):
+                #addieren beider drohnenrouten
+                dt = ab[numbers[i]][numbers[j]] + ab[numbers[j]][numbers[k]] 
+                ct = kosten(numbers[i], numbers[j], numbers[k], 8.3, 5.5, 8, 20)
+                if(ct<c):
+                    c = ct
                     d = dt
-            #1000 ist die weiteste entfernung die die Drohne fliegen könnte (Limit)
-            if(d<300):
-                ha[numbers[i]][numbers[k]]= d
+
+                    #kk = kleinster Knoten
+                    kk = numbers[j]      
+            jKnotenM[numbers[i]][numbers[k]]= kk
+            kk = None
+
+            #300 ist die weiteste entfernung die die Drohne fliegen könnte (Limit)
+            if(c<300):
+                ha[numbers[i]][numbers[k]]= round(d,2) 
+                kostenM[numbers[i]][numbers[k]] = "{:f}".format(float(c))
             else:
                 ha[numbers[i]][numbers[k]]= 9999 #unendlich
-    print('ha = ')
-    print(ha)
-    return ha
+                kostenM[numbers[i]][numbers[k]]= 9999 #unendlich
+
+    return ha,jKnotenM,kostenM
 
 #abstandsmatrix alleknoten
 def abstaende(numbers):
@@ -126,10 +149,6 @@ def abstaende(numbers):
     for x in range (len(numbers)):
         xcoord.insert(x,posnumbers[str(x)][0])
         ycoord.insert(x,posnumbers[str(x)][1])
-
-    print('coord')
-    print(xcoord)
-    print(ycoord)
     
     for a in range (len(numbers)):
         for b in range (len(numbers)):
@@ -194,16 +213,70 @@ def print_hilfsgraph(ha):
     plt.show()
 
 
+def kosten(i, j, k, gD, gT, wD, wT):
+
+    warteKostenT = 0
+    warteKostenD = 0
+
+    #Zeit vom Truck 
+    zeitSubIK= ab[i][k] / gT
+
+    #Zeit der Drohne
+    zeitIJK = (ab[i][j] + ab[j][k]) /gD
+
+    #Einsparung der geänderten Strecke des Truck
+    einsparung = (ab[i][k] - ab[i][j] - ab[j][k]) /gT 
+
+    #Wer muss warten
+    dif = zeitIJK - zeitSubIK
+
+    #WarteKosten des Truck und der Drohne
+    if(dif > 0):
+        warteKostenT = dif * wT
+    else: 
+        warteKostenD = dif * wD
+
+    #die Drohne ist 25mal billiger als der Truck
+    costIJK = zeitIJK/25
+    costSubIK = zeitSubIK  
+
+    #nach der Formel in 44
+    cost = costSubIK + costIJK + einsparung + warteKostenD + warteKostenT
+
+    return cost
+
+
+
+
+
+
+
+
 node_list = ['X','A','B','C','D','E','F'] 
 pos={'X':(0,0),'A':(220,20),'B':(270,70),'C':(250,210),'D':(90,60),'E':(120,120),'F':(50,220)}
 posnumbers={'0':(0,0),'1':(220,20),'2':(270,70),'3':(250,210),'4':(90,60),'5':(120,120),'6':(50,220), '7':(0,0)}
 
+
+row_labels = ['X','A', 'B', 'C', 'D', 'E', 'F', 'X']
+column_labels = ['X','A', 'B', 'C', 'D', 'E', 'F', 'X']
+
 weite,node_list=plot_weighted_graph(node_list,pos)
 numbers=umschreiben(node_list)
 ab= abstaende(numbers)
-ha = hilfsgraph(weite,numbers,ab)
+ha,jKnotenM,kostenM = hilfsgraph(weite,numbers,ab)
+print('alle Abstände')
 print(ab)
-print_hilfsgraph(ha)
+print('ha')
+print(ha)
+print('Kosten')
+np.set_printoptions(suppress=True,formatter={'float_kind':'{:0.2f}'.format})
+dfkostenM = pandas.DataFrame(kostenM, columns=column_labels, index=row_labels)
+
+myArray=np.array(dfkostenM)
+print(myArray)
+print('Knotenmatrix')
+print (jKnotenM)
+#print_hilfsgraph(ha)
 
 
 
