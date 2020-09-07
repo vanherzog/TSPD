@@ -94,10 +94,20 @@ def hilfsgraph(weite, numbers, ab):
     
     #kostenM = ha
 
-    #befüllen der Grade
+    #befüllen der Grade und einbringen der Geschwindigkeit in die abstände
+    
     for i in range (len(numbers)-1):
         ha[numbers[i]][numbers[i+1]]=weite[i]
     ha[numbers[-1]][numbers[0]] = weite[-1]
+    
+    for i in range(len(weite)-1):
+        weite[i] = round(weite[i]/gT,2)
+
+    
+    for i in range (len(numbers)-1):
+        kostenM[numbers[i]][numbers[i+1]]=weite[i]
+    kostenM[numbers[-1]][numbers[0]] = weite[-1]
+    
 
     
     
@@ -114,9 +124,9 @@ def hilfsgraph(weite, numbers, ab):
             for j in range(i+1, len(numbers)):
                 if(numbers[j] == numbers[k]):
                     break
-                #addieren beider drohnenrouten
+                #addieren beider drohnenrouten (wo keine drohnenrouten gemacht werden, also bei direkten nachbarn wird die normale distanz genommen)
                 dt = ab[numbers[i]][numbers[j]] + ab[numbers[j]][numbers[k]] 
-                ct = kosten(numbers[i], numbers[j], numbers[k], 8.3, 5.5, 8, 20)
+                ct = kosten(numbers[i], numbers[j], numbers[k],gD, gT, wD, wT)
                 if(ct<c):
                     c = ct
                     d = dt
@@ -209,8 +219,8 @@ def print_hilfsgraph(ha):
                     )
     
     nx.draw_networkx_labels(G,posnumbers,font_size=1, font_family="sans-serif")
-    plt.draw()
-    plt.show()
+    # plt.draw()
+    # plt.show()
 
 
 def kosten(i, j, k, gD, gT, wD, wT):
@@ -245,10 +255,55 @@ def kosten(i, j, k, gD, gT, wD, wT):
 
     return cost
 
+def direkteTruckKosten(ab,gT):
+    #umrechnung von Abstandmatrix in Kostenmatrix
+    ab = ab/gT
+    return ab
 
+def findingshortP():
 
+    billigsteKostenM = np.zeros(shape=(len(numbers),len(numbers)))
 
+    for i in range(len(billigsteKostenM)):
+        for k in range(len(billigsteKostenM)):
+            a = direkteKostenMatrix[i][k]
+            b = myArray[i][k]
+            billigsteKostenM[i][k]=min(a,b)
+    print('billigsteKostenM')
+    print(billigsteKostenM)
+    
+    P = [None] * len(numbers)
+    V = [9999] * len(numbers)
+    
+    V[0] = 0
+    P[0] = 0
 
+    for k in range(1,len(numbers)):
+        for i in range(len(numbers)):
+            if(i == k):
+                i=0
+                break
+            if(V[k] > V[i] + billigsteKostenM[numbers[i]][numbers[k]]):
+                V[k] = V[i] + billigsteKostenM[numbers[i]][numbers[k]]
+                P[k] = numbers[i]
+    print(numbers)
+    return P,V
+
+# def Split_Algo_Step2():
+
+#     j = len(numbers) -1
+#     i = 9999
+#     Sa = []
+#     Sa.append(numbers[j])
+
+#     while i != 0:
+#         i = P[j]
+#         Sa.append(i)
+#         j = i
+        
+#     Sa = Sa.reverse()
+
+#     return Sa
 
 
 
@@ -256,6 +311,10 @@ node_list = ['X','A','B','C','D','E','F']
 pos={'X':(0,0),'A':(220,20),'B':(270,70),'C':(250,210),'D':(90,60),'E':(120,120),'F':(50,220)}
 posnumbers={'0':(0,0),'1':(220,20),'2':(270,70),'3':(250,210),'4':(90,60),'5':(120,120),'6':(50,220), '7':(0,0)}
 
+gD=8.3
+gT=5.5
+wD=8
+wT=20
 
 row_labels = ['X','A', 'B', 'C', 'D', 'E', 'F', 'X']
 column_labels = ['X','A', 'B', 'C', 'D', 'E', 'F', 'X']
@@ -268,6 +327,7 @@ print('alle Abstände')
 print(ab)
 print('ha')
 print(ha)
+
 print('Kosten')
 np.set_printoptions(suppress=True,formatter={'float_kind':'{:0.2f}'.format})
 dfkostenM = pandas.DataFrame(kostenM, columns=column_labels, index=row_labels)
@@ -276,7 +336,17 @@ myArray=np.array(dfkostenM)
 print(myArray)
 print('Knotenmatrix')
 print (jKnotenM)
-#print_hilfsgraph(ha)
+print_hilfsgraph(ha)
+direkteKostenMatrix=direkteTruckKosten(ab,gT)
+print('direkteKostenMatrix')
+print(direkteKostenMatrix)
 
+P,V = findingshortP()
+print ('P')
+print (P)
+print ('V')
+print (V)
 
-
+Sa = Split_Algo_Step2()
+print ('Sa')
+print(Sa)
