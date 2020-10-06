@@ -101,6 +101,7 @@ def hilfsgraph(weite, numbers, ab):
         ha[numbers[i]][numbers[i+1]]=weite[i]
     ha[numbers[-1]][numbers[0]] = weite[-1]
     
+    #weite mit kosten versehen
     for i in range(len(weite)-1):
         weite[i] = round(weite[i]/gT,2)
 
@@ -125,6 +126,7 @@ def hilfsgraph(weite, numbers, ab):
             for j in range(i+1, len(numbers)):
                 if(numbers[j] == numbers[k]):
                     break
+
                 #addieren beider drohnenrouten (wo keine drohnenrouten gemacht werden, also bei direkten nachbarn wird die normale distanz genommen)
                 dt = ab[numbers[i]][numbers[j]] + ab[numbers[j]][numbers[k]] 
                 ct = kosten(numbers[i], numbers[j], numbers[k],gD, gT, wD, wT)
@@ -135,11 +137,11 @@ def hilfsgraph(weite, numbers, ab):
 
                     #kk = kleinster Knoten
                     kk = numbers[j]      
-            jKnotenM[numbers[i]][numbers[k]]= kk
-            kk = None
+                    jKnotenM[numbers[i]][numbers[k]]= kk
+                    #kk = None
 
-            #300 ist die weiteste entfernung die die Drohne fliegen könnte (Limit)
-            if(c<200):
+            #400 ist die weiteste entfernung die die Drohne fliegen könnte (Limit)
+            if(c<400):
                 ha[numbers[i]][numbers[k]]= round(d,2) 
                 kostenM[numbers[i]][numbers[k]] = "{:f}".format(float(c))
             else:
@@ -228,18 +230,29 @@ def print_hilfsgraph(ha):
 
 
 def kosten(i, j, k, gD, gT, wD, wT):
-
+    #i j k sind numbers[i,j,k] zb(Knoten 5,3,6)
     warteKostenT = 0
     warteKostenD = 0
 
     #Zeit vom Truck 
-    zeitSubIK= ab[i][k] / gT
+    abSum=0
+    
+    #kumulieren der Truckstrecke
+    for x in range (numbers.index(i),numbers.index(k)-1):
+        if numbers.index(j)==x:
+            i=i+1
+        if x+1==numbers.index(j):
+            abSum=abSum+ab[x][x+2]
+        else:
+            abSum=abSum+ab[x][x+1]
+
+    zeitSubIK= abSum / gT
 
     #Zeit der Drohne
     zeitIJK = (ab[i][j] + ab[j][k]) /gD
 
     #Einsparung der geänderten Strecke des Truck
-    einsparung = (ab[i][k] - ab[i][j] - ab[j][k]) /gT 
+    #einsparung = (ab[i][k] - ab[i][j] - ab[j][k]) /gT 
     
 
     #Wer muss warten
@@ -259,26 +272,22 @@ def kosten(i, j, k, gD, gT, wD, wT):
     #einsparung positiv
     
     #nach der Formel in 44
-    cost = costSubIK + costIJK + einsparung + warteKostenD + warteKostenT
+    cost = costSubIK + costIJK + warteKostenD + warteKostenT
 
     return cost
 
 def direkteTruckKosten(ab,gT):
-    #umrechnung von Abstandmatrix in Kostenmatrix
-    ab = ab/gT
-    return ab
+    dkm = np.zeros(shape=(len(numbers),len(numbers)))
+    #direkte Abstände in numbers eintragen (weite[i] hat schon kosten drin)
+    for i in range(len(numbers)-1):
+        dkm[numbers[i]][numbers[i+1]]=weite[i]
+    #alle anderen abstände eintragen (bögen im Hilfsgraph) abstände werden kumuliert mit jeder weiteren Pos
+    for j in range(len(numbers)-2):
+        for k in range (j+1,len(numbers)-1):
+            dkm[numbers[j]][numbers[k+1]]=dkm[numbers[j]][numbers[k]]+dkm[numbers[k]][numbers[k+1]]
+    return dkm
 
 def findingshortP():
-
-    # billigsteKostenM = np.zeros(shape=(len(numbers),len(numbers)))
-
-    # for i in range(len(billigsteKostenM)):
-    #     for k in range(len(billigsteKostenM)):
-    #         a = direkteKostenMatrix[i][k]
-    #         b = kostenM[i][k]
-    #         billigsteKostenM[i][k]=min(a,b)
-    # print('billigsteKostenM')
-    # print(billigsteKostenM)
     
     P = [None] * len(numbers)
     V = [9999] * len(numbers)
@@ -286,48 +295,183 @@ def findingshortP():
     V[0] = 0
     P[0] = 0
 
+    #dijkstra
     for k in range(1,len(numbers)):
-        for i in range(len(numbers)):
-            if(i == k):
-                i=0
-                break
-            if(V[numbers[k]] > V[numbers[i]] + kostenM[numbers[i]][numbers[k]]): #davor hatten wir hier und dadrunter billigsteKostenM weil wir die zwei Matrizen oben verglichen haben
-                #Die Drohnenroute ist zu weit und deswegen muss er mit dem Truck diesen Punkt anfahren
-                if kostenM[numbers[i]][numbers[k]] > 9998:
-                    V[numbers[k]] = kostenM[numbers[i]][numbers[k]]
-                    P[numbers[k]] = numbers[i]
-                else:
-                    V[numbers[k]] = V[numbers[i]] + kostenM[numbers[i]][numbers[k]]
-                    P[numbers[k]] = numbers[i]
+        direkt = dkm[numbers[k]][numbers[k-1]]+V[numbers[k-1]]
+        indirekt = 9999
+        finalI = 0
+        finalJ = 0
+        for i in range(k):
+            tmpJ = jKnotenM[numbers[i]][numbers[k]]
+            if math.isnan(tmpJ):
+                continue
+            print(tmpJ)
+            tmpJcost = V[numbers[i]]+kosten(numbers[i], numbers[int(tmpJ)], numbers[k], gD, gT, wD, wT)
+            if tmpJcost < indirekt:
+                indirekt = tmpJcost
+                finalJ = tmpJ
+                finalI = i
+        # if indirekt > direkt:
+        #     mydict[i][k]='T'
+
 
     return P,V
 
-def Split_Algo_Step2():
 
-    j = len(numbers) -1
-    i = 9999
-    Sa = []
-    Sa.append(numbers[j])
+
+
+def billigste(i,k,app):
+    x = 'T'
     
-    while i != 0 :
-        i = P[j]
-        Sa.append(i)
-        j = i
+    if(dkm[numbers[i]][numbers[k]] <= kostenM[numbers[i]][numbers[k]]):
+        kosten = dkm[numbers[i]][numbers[k]]
+    else:
+        #doppel append weil die drohne zuerst zu j und dann zu k fliegt
+        x = 'D'
+        kosten = kostenM[numbers[i]][numbers[k]]
+    #wenn V[k] noch unendlich ist weil er es gerade erhöht hat, soll der nicht alle ausgerechneten Sachen bis dahin überschreibern, sondern vom letzen Punkt k-1
+    #zum neuen k einfach eine Truckroute machen
+    # if app == 1 and i == 0:
+    #     mitWas[numbers[k-1]][numbers[k]] = 'T'
 
-    #reverse    
-    Sa = Sa[::-1]
+    # #Truckbedingungen
+    # if app == 1 and i != 0 and x == 'T':
+
+    #     #dürfen keine Nachbarn sein, sonst schmeißt index ein Error weil Nachbarn keinen j Knoten haben
+    #     if i+1 != k:
+    #         #das alte 'T' das dem jetzigen Drohnenpunkt zugeordnet ist, löschen
+    #         index = numbers.index(int(jKnotenM[numbers[i]][numbers[k]]))
+    #         if mitWas[numbers[index-1]][numbers[index]] == 'T':
+    #             mitWas[numbers[index-1]][numbers[index]] = '/'
+    #         altesI = 0
+    #         altesK = 0
+    #         for o in range(i,k-1):
+    #             for p in range(i+1,k):
+    #                 #alle alten drohnenrouten überschreiben
+    #                 if mitWas[numbers[o]][numbers[p]] == '1':
+    #                     altesI = numbers[o]
+    #                     #keine T's wo ne drohne fliegt(j)
+    #                     if o == index-1 and p == index or o == index and p == index+1:
+    #                         break   
+    #                     if o+1 == p:
+    #                         mitWas[numbers[o]][numbers[p]] = 'T'
+    #                     else:
+    #                         mitWas[numbers[o]][numbers[p]] = '/'
+
+    #                 if mitWas[numbers[o]][numbers[p]] == '2':
+    #                     altesK = numbers[p]
+    #                     mitWas[altesI][altesK] = '/'
+    #                     #keine T's wo ne drohne fliegt(j)
+    #                     if o == index-1 and p == index or o == index and p == index+1:
+    #                         break   
+    #                     if o+1 == p:
+    #                         mitWas[numbers[o]][numbers[p]] = 'T'
+    #                     else:
+    #                         mitWas[numbers[o]][numbers[p]] = '/'
+        
+        
+    #     for n in range(i,k):
+    #         mitWas[numbers[n]][numbers[n+1]]= 'T'
+
+    # #Drohnenbedingungen
+    # if app == 1 and x == 'D':
+    #     alteI = 0
+    #     alteK = 0
+    #     #das alte 'T' das dem jetzigen Drohnenpunkt zugeordnet ist, löschen
+    #     index = numbers.index(int(jKnotenM[numbers[i]][numbers[k]]))
+    #     if mitWas[numbers[index-1]][numbers[index]] == 'T':
+    #         mitWas[numbers[index-1]][numbers[index]] = '/'
+    #     for o in range(i,k-1):
+    #         for p in range(i+1,k):
+    #             #alle alten drohnenrouten überschreiben, die innerhalb der neuen liegen
+    #             if mitWas[numbers[o]][numbers[p]] == '1':
+    #                 alteI = numbers[o]
+    #                 #keine T's wo ne drohne fliegt(j)
+    #                 if o == index-1 and p == index or o == index and p == index+1:
+    #                     break   
+    #                 #wenn 1 zwischen zwei Nachbarn ist, wird es durch T ersetzt, sonst wird es gelöscht
+    #                 if o+1 == p:
+    #                     mitWas[numbers[o]][numbers[p]] = 'T'
+    #                 else:
+    #                     mitWas[numbers[o]][numbers[p]] = '/'
+
+    #             if mitWas[numbers[o]][numbers[p]] == '2':
+    #                 alteK = numbers[p]
+    #                 mitWas[alteI][alteK] = '/'
+    #                 #keine T's wo ne drohne fliegt(j)
+    #                 if o == index-1 and p == index or o == index and p == index+1:
+    #                     break   
+    #                 if o+1 == p:
+    #                     mitWas[numbers[o]][numbers[p]] = 'T'
+    #                 else:
+    #                     mitWas[numbers[o]][numbers[p]] = '/'
+    #     #alle Drohnenrouten deren k in der neuen drohnenroute liegt(können teils außerhalb sein), müssen auch gelöscht werden, weil es nur eine Drohne gibt
+    #     if i != 0:
+    #         for e in range(0,numbers[i-1]):
+    #             for f in range(numbers[i+1], numbers[k]):
+    #                 try:
+    #                     #Nachbarn haben kein j und sonst wird ein ERROR geschmissen
+    #                     if jKnotenM[numbers[e]][numbers[f]] >= 0 :
+    #                         jj = numbers.index(int(jKnotenM[numbers[e]][numbers[f]]))
+    #                         if mitWas[numbers[e]][numbers[jj]] == '1':
+    #                             mitWas[numbers[e]][numbers[jj]] == '/'
+    #                         if mitWas[numbers[jj]][numbers[f]] == '2':
+    #                             mitWas[numbers[jj]][numbers[f]] == '/'
+    #                 except ValueError:
+    #                     print('############################')
+    #                     print (jKnotenM[numbers[e]][numbers[f]])
+                                   
+            
+        
+    #     mitWas[numbers[i]][int(jKnotenM[numbers[i]][numbers[k]])]= '1' 
+    #     mitWas[int(jKnotenM[numbers[i]][numbers[k]])][numbers[k]]= '2'
+    #     #die neue Truckroute eintragen, die den Drohnenpunkt überspringt
+    #     mitWas[numbers[index-1]][numbers[index+1]] = 'T'
+        
+   
+    return kosten
+
+
+# def selectMarix(x):
+#     return {
+#         '1':M_A,
+#         '2':M_B,
+#         '3':M_C,
+#         '4':M_D,
+#         '5':M_E,
+#         '6':M_F,
+#         '7':M_X,
+#     }.get(x,None)
+
+
+# def Split_Algo_Step2():
+
+#     j = len(numbers) -1
+#     i = 9999
+#     Sa = []
+#     Sa.append(numbers[j])
+    
+#     while i != 0 :
+#         i = P[j]
+#         Sa.append(i)
+#         j = i
+
+#     #reverse    
+#     Sa = Sa[::-1]
 
     
 
 
 
-    return Sa
+#     return Sa
 
 
 
 node_list = ['X','A','B','C','D','E','F'] 
 pos={'X':(0,0),'A':(220,20),'B':(270,70),'C':(250,210),'D':(90,60),'E':(120,120),'F':(50,220)}
 posnumbers={'0':(0,0),'1':(220,20),'2':(270,70),'3':(250,210),'4':(90,60),'5':(120,120),'6':(50,220), '7':(0,0)}
+
+
 
 gD=9
 gT=7
@@ -347,13 +491,49 @@ weite,node_list=plot_weighted_graph(node_list,pos)
 numbers=umschreiben(node_list)
 ab= abstaende(numbers)
 ha,jKnotenM,kostenM = hilfsgraph(weite,numbers,ab)
-direkteKostenMatrix=direkteTruckKosten(ab,gT)
-print(direkteKostenMatrix)
+dkm=direkteTruckKosten(ab,gT)
+
+mitWas = np.empty(shape=(len(numbers),len(numbers)), dtype = str)
+for i in range (len(numbers)):
+        for j in range (len(numbers)):
+            mitWas[i][j] = '/'
+
 P,V = findingshortP()
 
 
+
+M_X= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
+M_A= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
+M_B= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
+M_C= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
+M_D= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
+M_E= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
+M_F= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
+# mydict["1"]=M_X
+# print(mydict)
+dfM_X = pd.DataFrame(M_X, columns=column_labels, index=row_labels)
+dfM_A = pd.DataFrame(M_A, columns=column_labels, index=row_labels)
+dfM_B = pd.DataFrame(M_B, columns=column_labels, index=row_labels)
+dfM_C = pd.DataFrame(M_C, columns=column_labels, index=row_labels)
+dfM_D = pd.DataFrame(M_D, columns=column_labels, index=row_labels)
+dfM_E = pd.DataFrame(M_E, columns=column_labels, index=row_labels)
+dfM_F = pd.DataFrame(M_F, columns=column_labels, index=row_labels)
+
+    
+print('M_X',dfM_X, sep='\n')
+print('M_A',dfM_A, sep='\n')
+print('M_B',dfM_B, sep='\n')
+print('M_C',dfM_C, sep='\n')
+print('M_D',dfM_D, sep='\n')
+print('M_E',dfM_E, sep='\n')
+print('M_F',dfM_F, sep='\n')
 #pandas
 pd.options.display.float_format = '{:0.0f}'.format
+print('')
+
+dfdkm = pd.DataFrame(dkm, columns=column_labels, index=row_labels)
+print('dkm',dfdkm, sep='\n')
+
 print('')
 
 dfab = pd.DataFrame(ab, columns=column_labels, index=row_labels)
@@ -374,6 +554,11 @@ print('')
 dfjKnotenM = pd.DataFrame(jKnotenM, columns=column_labels, index=row_labels)
 print('Knotenmatrix',dfjKnotenM, sep='\n')
 
+mitW = pd.DataFrame(mitWas, columns=column_labels, index=row_labels)
+print('mit Was',mitW, sep='\n')
+
+print('')
+
 print('')
 print(numbers)
 print('')
@@ -383,9 +568,10 @@ print('')
 dfV = pd.DataFrame(V, columns=['X'], index=row_labels)
 print('V',dfV.T, sep='\n')
 print('')
-Sa = Split_Algo_Step2()
-print ('Sa')
-print(Sa)
+# Sa = Split_Algo_Step2()
+# print ('Sa')
+# print(Sa)
+
 
 
 plt.draw()
