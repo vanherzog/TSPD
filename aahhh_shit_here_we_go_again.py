@@ -361,17 +361,14 @@ def setMartix(m,y,x,sign):
 
 def copyMatrix(kM,copy):
 
-    switcher = {
-        '0':M_X0,
-        '1':M_A,
-        '2':M_B,
-        '3':M_C,
-        '4':M_D,
-        '5':M_E,
-        '6':M_F,
-        '7':M_X
-    }.get(kM,None)
-
+    global M_X0
+    global M_A
+    global M_B
+    global M_C
+    global M_D
+    global M_E
+    global M_F
+    global M_X
     stitcher = {
         '0':M_X0,
         '1':M_A,
@@ -383,12 +380,24 @@ def copyMatrix(kM,copy):
         '7':M_X
     }.get(copy,None)
 
-    print('stitcher')
-    print(stitcher)
-    #neue matrix, keine Referenz
-    switcher=stitcher.copy()
-    return switcher
+    if kM == '0':
+        M_X0=stitcher
+    elif kM == '1':
+        M_A=stitcher
+    elif kM == '2':
+        M_B=stitcher
+    elif kM == '3':
+        M_C=stitcher
+    elif kM == '4':
+        M_D=stitcher
+    elif kM == '5':
+        M_E=stitcher
+    elif kM == '6':
+        M_F=stitcher
+    elif kM == '7':
+        M_X=stitcher
 
+    
 
 # def Split_Algo_Step2():
 
@@ -431,6 +440,7 @@ numbers=umschreiben(node_list)
 ab= abstaende(numbers)
 ha,jKnotenM,kostenM = hilfsgraph(weite,numbers,ab)
 dkm=direkteTruckKosten(ab,gT)
+
 
 M_X0= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
 M_X= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
