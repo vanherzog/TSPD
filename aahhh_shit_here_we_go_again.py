@@ -3,6 +3,7 @@ import networkx as nx
 import numpy as np
 import math
 import pandas as pd
+from copy import deepcopy
  
 G = nx.MultiDiGraph(format='png', directed=True)
 
@@ -299,53 +300,73 @@ def findingshortP():
 
     #dijkstra
     for k in range(1,len(numbers)):
-        direkt = dkm[numbers[k-1]][numbers[k]]+V[numbers[k-1]]
+        direkt = dkm[numbers[k-1]][numbers[k]] + V[numbers[k-1]]
         indirekt = 9999
         finalI = 0
         finalJ = 0
         for i in range(k):
             tmpJ = jKnotenM[numbers[i]][numbers[k]]
+            #wenn es kein J gibt, dann gibt es auch keinen Drohnenflug
             if math.isnan(tmpJ):
                 continue
-            tmpJcost = V[numbers[i]]+kosten(numbers[i], numbers[int(tmpJ)], numbers[k], gD, gT, wD, wT)
+            tmpJcost = V[numbers[i]] + kosten(numbers[i], numbers[int(tmpJ)], numbers[k], gD, gT, wD, wT)
+            #bester Drohnenflug? bzw bestes J?
             if tmpJcost < indirekt:
                 indirekt = tmpJcost
                 finalJ = tmpJ
                 finalI = i
-        if indirekt > direkt:
-            P[numbers[k]]=numbers[k-1]
-            V[numbers[k]]=direkt
+        if direkt < indirekt:
+            P[numbers[k]] = numbers[k-1]
+            V[numbers[k]] = direkt
             #kopieren des Vorgängers
-            copyMatrix(str(k),str(k-1))
+            pe = 'Matrix Kopieren|  numbers von k-1 = ' + str(numbers[k-1]) +'| numbers von k = ' + str(numbers[k])
+            print(pe)
+            copyMatrix(str(numbers[k]),str(numbers[k-1]))
             #benachbarte Truckstrecke
-            setMartix(str(k),k-1,k,'T')
+            pc = 'Benachbarbartes T einfügen| numbers von k-1 = ' + str(numbers[k-1]) + '| numbers von k = ' + str(numbers[k])
+            print(pc)
+            setMatrix(str(numbers[k]),k-1,k,'T')
+            
+            #copyMatrix(k-1,k) #von NIKI eingefügt, kann falsch sein
+            
         else:
             P[numbers[k]]=numbers[finalI]
             V[numbers[k]]=indirekt
-            #kopieren bis I
-            copyMatrix(str(k),str(int(finalI)))
 
-            print('J Knoten')
-            print(finalJ)
+            #kopieren bis I
+            pf = 'Matrix Kopieren| numbers von k-1 = ' + str(numbers[k-1]) +'| numbers von finalI = ' + str(numbers[finalI])
+            print(pf)
+            copyMatrix(str(numbers[k]),str(int(numbers[finalI])))
+            pa = 'I = ' + str(numbers[finalI]) +  ', J Knoten = ' + str(numbers[int(finalJ)]) + ', K = ' + str(numbers[k])
+            print(pa)
             #Truckstrecke während Drohnenflug
             for x in range (finalI,k):
-                if finalJ==x:
-                    x=x+1
-                if x+1==finalJ:
-                    setMartix(str(k),x,x+2,'T')
-                    if x+2==k:
+                if finalJ == x:
+                    x = x+1
+                if x+1 == finalJ:
+                    setMatrix(str(numbers[k]),x,x+2,'T')
+                    if x+2 == k:
                         break
                 else:
-                    setMartix(str(k),x,x+1,'T')
+                    setMatrix(str(numbers[k]),x,x+1,'T')
+            pd = 'Drohnen T eingefügt| numbers von i = ' + str(numbers[i]) +'| numbers von k = ' + str(numbers[k])
+            print(pd)
             #Drohnenflug
-            
-            setMartix(str(k),int(finalI),int(finalJ),'1')
-            setMartix(str(k),int(finalJ),k,'2')
+            pe = '1 & 2 einfügen und die alten T löschen| i = ' + str(numbers[finalI]) +  ', J Knoten = ' + str(numbers[int(finalJ)]) + ', K = ' + str(numbers[k])
+            print(pe)
 
-    return P,V
+            setMatrix(str(numbers[k]),int(finalI),int(finalJ),'1')
+            setMatrix(str(numbers[k]),int(finalJ),k,'2')
+            #deleteMatrix(str(numbers[k]),int(finalI),int(finalJ),'T')
+            #deleteMatrix(str(numbers[k]),int(finalJ),k,'T')
 
 
-def setMartix(m,y,x,sign):
+    return P,V 
+
+#kopieren läuft schief & das alte T wird nicht gelöscht wo jetzt die Drohne hinfliegt und 1&2 gehen teilweise gegen die Richtung
+
+def setMatrix(m,y,x,sign):
+
 
     switcher = {
         '1':M_A,
@@ -356,10 +377,66 @@ def setMartix(m,y,x,sign):
         '6':M_F,
         '7':M_X
     }.get(m,None)
+
     switcher[numbers[y]][numbers[x]]=sign
-    return switcher
+
+    dfM_X0 = pd.DataFrame(M_X0, columns=column_labels, index=row_labels)
+    dfM_X = pd.DataFrame(M_X, columns=column_labels, index=row_labels)
+    dfM_A = pd.DataFrame(M_A, columns=column_labels, index=row_labels)
+    dfM_B = pd.DataFrame(M_B, columns=column_labels, index=row_labels)
+    dfM_C = pd.DataFrame(M_C, columns=column_labels, index=row_labels)
+    dfM_D = pd.DataFrame(M_D, columns=column_labels, index=row_labels)
+    dfM_E = pd.DataFrame(M_E, columns=column_labels, index=row_labels)
+    dfM_F = pd.DataFrame(M_F, columns=column_labels, index=row_labels)
+
+    print('M_X0',dfM_X0, sep='\n')  
+    print('M_X',dfM_X, sep='\n')
+    print('M_A',dfM_A, sep='\n')
+    print('M_B',dfM_B, sep='\n')
+    print('M_C',dfM_C, sep='\n')
+    print('M_D',dfM_D, sep='\n')
+    print('M_E',dfM_E, sep='\n')
+    print('M_F',dfM_F, sep='\n')
+
+    #return switcher
+
+
+# def deleteMatrix(m,y,x,sign): 
+
+#      switcher = {
+#         '1':M_A,
+#         '2':M_B,
+#         '3':M_C,
+#         '4':M_D,
+#         '5':M_E,
+#         '6':M_F,
+#         '7':M_X
+#     }.get(m,None)
+
+#     if (switcher[numbers[y]][numbers[x]] == sign):
+#         switcher[numbers[y]][numbers[x]] = '/'
+
+#     dfM_X0 = pd.DataFrame(M_X0, columns=column_labels, index=row_labels)
+#     dfM_X = pd.DataFrame(M_X, columns=column_labels, index=row_labels)
+#     dfM_A = pd.DataFrame(M_A, columns=column_labels, index=row_labels)
+#     dfM_B = pd.DataFrame(M_B, columns=column_labels, index=row_labels)
+#     dfM_C = pd.DataFrame(M_C, columns=column_labels, index=row_labels)
+#     dfM_D = pd.DataFrame(M_D, columns=column_labels, index=row_labels)
+#     dfM_E = pd.DataFrame(M_E, columns=column_labels, index=row_labels)
+#     dfM_F = pd.DataFrame(M_F, columns=column_labels, index=row_labels)
+
+#     print('M_X0',dfM_X0, sep='\n')  
+#     print('M_X',dfM_X, sep='\n')
+#     print('M_A',dfM_A, sep='\n')
+#     print('M_B',dfM_B, sep='\n')
+#     print('M_C',dfM_C, sep='\n')
+#     print('M_D',dfM_D, sep='\n')
+#     print('M_E',dfM_E, sep='\n')
+#     print('M_F',dfM_F, sep='\n')
+
 
 def copyMatrix(kM,copy):
+    
 
     global M_X0
     global M_A
@@ -369,6 +446,7 @@ def copyMatrix(kM,copy):
     global M_E
     global M_F
     global M_X
+
     stitcher = {
         '0':M_X0,
         '1':M_A,
@@ -381,21 +459,41 @@ def copyMatrix(kM,copy):
     }.get(copy,None)
 
     if kM == '0':
-        M_X0=stitcher
+        M_X0= deepcopy(stitcher)
     elif kM == '1':
-        M_A=stitcher
+        M_A=deepcopy(stitcher)
     elif kM == '2':
-        M_B=stitcher
+        M_B=deepcopy(stitcher)
     elif kM == '3':
-        M_C=stitcher
+        M_C=deepcopy(stitcher)
     elif kM == '4':
-        M_D=stitcher
+        M_D=deepcopy(stitcher)
     elif kM == '5':
-        M_E=stitcher
+        M_E=deepcopy(stitcher)
     elif kM == '6':
-        M_F=stitcher
+        M_F=deepcopy(stitcher)
     elif kM == '7':
-        M_X=stitcher
+        M_X=deepcopy(stitcher)
+
+    
+
+    dfM_X0 = pd.DataFrame(M_X0, columns=column_labels, index=row_labels)
+    dfM_X = pd.DataFrame(M_X, columns=column_labels, index=row_labels)
+    dfM_A = pd.DataFrame(M_A, columns=column_labels, index=row_labels)
+    dfM_B = pd.DataFrame(M_B, columns=column_labels, index=row_labels)
+    dfM_C = pd.DataFrame(M_C, columns=column_labels, index=row_labels)
+    dfM_D = pd.DataFrame(M_D, columns=column_labels, index=row_labels)
+    dfM_E = pd.DataFrame(M_E, columns=column_labels, index=row_labels)
+    dfM_F = pd.DataFrame(M_F, columns=column_labels, index=row_labels)
+
+    print('M_X0',dfM_X0, sep='\n')  
+    print('M_X',dfM_X, sep='\n')
+    print('M_A',dfM_A, sep='\n')
+    print('M_B',dfM_B, sep='\n')
+    print('M_C',dfM_C, sep='\n')
+    print('M_D',dfM_D, sep='\n')
+    print('M_E',dfM_E, sep='\n')
+    print('M_F',dfM_F, sep='\n')
 
     
 
