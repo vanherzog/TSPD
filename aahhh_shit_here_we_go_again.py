@@ -3,6 +3,7 @@ import networkx as nx
 import numpy as np
 import math
 import pandas as pd
+from copy import deepcopy
  
 G = nx.MultiDiGraph(format='png', directed=True)
 
@@ -119,10 +120,10 @@ def hilfsgraph(weite, numbers, ab):
         for k in range(i+2, len(numbers)):
             #d ist der kürzeste weg von allen j verschiebungen, mit festem i und k
             #dt ist der weg vom temporären j
-            d = 399
-            dt = 400
-            c = 400
-            ct = 399
+            d = 599
+            dt =600
+            c = 600
+            ct = 599
             for j in range(i+1, len(numbers)):
                 if(numbers[j] == numbers[k]):
                     break
@@ -141,7 +142,7 @@ def hilfsgraph(weite, numbers, ab):
                     #kk = None
 
             #400 ist die weiteste entfernung die die Drohne fliegen könnte (Limit)
-            if(c<400):
+            if(c<600):
                 ha[numbers[i]][numbers[k]]= round(d,2) 
                 kostenM[numbers[i]][numbers[k]] = "{:f}".format(float(c))
             else:
@@ -225,8 +226,6 @@ def print_hilfsgraph(ha):
                     )
     
     nx.draw_networkx_labels(H,posnumbers,font_size=1, font_family="sans-serif")
-    # plt.draw()
-    # plt.show()
 
 
 def kosten(i, j, k, gD, gT, wD, wT):
@@ -238,11 +237,13 @@ def kosten(i, j, k, gD, gT, wD, wT):
     abSum=0
     
     #kumulieren der Truckstrecke
-    for x in range (numbers.index(i),numbers.index(k)-1):
+    for x in range (numbers.index(i),numbers.index(k)):
         if numbers.index(j)==x:
-            i=i+1
+            x=x+1
         if x+1==numbers.index(j):
             abSum=abSum+ab[x][x+2]
+            if x+2==numbers.index(k):
+                break
         else:
             abSum=abSum+ab[x][x+1]
 
@@ -251,12 +252,8 @@ def kosten(i, j, k, gD, gT, wD, wT):
     #Zeit der Drohne
     zeitIJK = (ab[i][j] + ab[j][k]) /gD
 
-    #Einsparung der geänderten Strecke des Truck
-    #einsparung = (ab[i][k] - ab[i][j] - ab[j][k]) /gT 
-    
-
     #Wer muss warten
-    dif = zeitIJK - zeitSubIK
+    dif = (zeitIJK - zeitSubIK) / 5
 
     #WarteKosten des Truck und der Drohne
     if(dif > 0):
@@ -267,20 +264,17 @@ def kosten(i, j, k, gD, gT, wD, wT):
     #die Drohne ist 25mal billiger als der Truck
     costIJK = zeitIJK/25
     costSubIK = zeitSubIK  
-
-
-    #einsparung positiv
-    
-    #nach der Formel in 44
     cost = costSubIK + costIJK + warteKostenD + warteKostenT
 
     return cost
 
 def direkteTruckKosten(ab,gT):
     dkm = np.zeros(shape=(len(numbers),len(numbers)))
+
     #direkte Abstände in numbers eintragen (weite[i] hat schon kosten drin)
     for i in range(len(numbers)-1):
         dkm[numbers[i]][numbers[i+1]]=weite[i]
+
     #alle anderen abstände eintragen (bögen im Hilfsgraph) abstände werden kumuliert mit jeder weiteren Pos
     for j in range(len(numbers)-2):
         for k in range (j+1,len(numbers)-1):
@@ -297,54 +291,114 @@ def findingshortP():
 
     #dijkstra
     for k in range(1,len(numbers)):
-        direkt = dkm[numbers[k]][numbers[k-1]]+V[numbers[k-1]]
+        direkt = dkm[numbers[k-1]][numbers[k]] + V[numbers[k-1]]
         indirekt = 9999
         finalI = 0
         finalJ = 0
         for i in range(k):
             tmpJ = jKnotenM[numbers[i]][numbers[k]]
+            #wenn es kein J gibt, dann gibt es auch keinen Drohnenflug
             if math.isnan(tmpJ):
                 continue
-            print(tmpJ)
-            tmpJcost = V[numbers[i]]+kosten(numbers[i], numbers[int(tmpJ)], numbers[k], gD, gT, wD, wT)
+            tmpJcost = V[numbers[i]] + kosten(numbers[i], int(tmpJ), numbers[k], gD, gT, wD, wT)
+            #bester Drohnenflug? bzw bestes J?
             if tmpJcost < indirekt:
                 indirekt = tmpJcost
-                finalJ = tmpJ
-                finalI = i
-        # if indirekt > direkt:
-        #     mydict[i][k]='T'
+                finalJ = deepcopy(tmpJ)
+                finalI = deepcopy(i)    
+
+        if direkt < indirekt:
+            P[numbers[k]] = numbers[k-1]
+            V[numbers[k]] = direkt
+            #kopieren des Vorgängers
+
+            copyMatrix(str(numbers[k]),str(numbers[k-1]))
+            #benachbarte Truckstrecke
+
+            setMatrix(str(numbers[k]),numbers[k-1],numbers[k],'T')
+            
+        else:
+            P[numbers[k]]=numbers[finalI]
+            V[numbers[k]]=indirekt
+
+            #kopieren bis I
+            copyMatrix(str(numbers[k]),str(int(numbers[finalI])))
+
+            #Truckstrecke während Drohnenflug
+            for x in range (finalI,k):
+                if numbers.index(finalJ) == x:
+                    x = x+1
+                if x+1 == numbers.index(finalJ):
+                    setMatrix(str(numbers[k]),numbers[x],numbers[x+2],'T')
+                    if x+2 == k:
+                        break
+                else:
+                    setMatrix(str(numbers[k]),numbers[x],numbers[x+1],'T')
+            #Drohnenflug
+            setMatrix(str(numbers[k]),int(numbers[finalI]),int(finalJ),'1')
+            setMatrix(str(numbers[k]),int(finalJ),numbers[k],'2')
+
+            #finalJ ist schon wegen tmpJ nach numbers sortiert
 
 
-    return P,V
+    return P,V 
 
 
+def setMatrix(m,y,x,sign):
 
 
-def billigste(i,k,app):
-    x = 'T'
-    
-    if(dkm[numbers[i]][numbers[k]] <= kostenM[numbers[i]][numbers[k]]):
-        kosten = dkm[numbers[i]][numbers[k]]
-    else:
-        #doppel append weil die drohne zuerst zu j und dann zu k fliegt
-        x = 'D'
-        kosten = kostenM[numbers[i]][numbers[k]]
-        
-    return kosten
-
-
-def selectMarix(x):
-    return {
+    switcher = {
         '1':M_A,
         '2':M_B,
         '3':M_C,
         '4':M_D,
         '5':M_E,
         '6':M_F,
-        '7':M_X,
-    }.get(x,None)
+        '7':M_X
+    }.get(m,None)
+
+    switcher[y][x]=sign
 
 
+def copyMatrix(kM,copy):
+    
+
+    global M_X0
+    global M_A
+    global M_B
+    global M_C
+    global M_D
+    global M_E
+    global M_F
+    global M_X
+
+    stitcher = {
+        '0':M_X0,
+        '1':M_A,
+        '2':M_B,
+        '3':M_C,
+        '4':M_D,
+        '5':M_E,
+        '6':M_F,
+        '7':M_X
+    }.get(copy,None)
+
+    if kM == '0':
+        M_X0= deepcopy(stitcher)
+    elif kM == '1':
+        M_A=deepcopy(stitcher)
+    elif kM == '2':
+        M_B=deepcopy(stitcher)
+    elif kM == '3':
+        M_C=deepcopy(stitcher)
+    elif kM == '4':
+        M_D=deepcopy(stitcher)
+    elif kM == '5':
+        M_E=deepcopy(stitcher)
+    elif kM == '6':
+        M_F=deepcopy(stitcher)
+    elif kM == '7':
+        M_X=deepcopy(stitcher)
 
 
 
@@ -352,11 +406,9 @@ node_list = ['X','A','B','C','D','E','F']
 pos={'X':(0,0),'A':(220,20),'B':(270,70),'C':(250,210),'D':(90,60),'E':(120,120),'F':(50,220)}
 posnumbers={'0':(0,0),'1':(220,20),'2':(270,70),'3':(250,210),'4':(90,60),'5':(120,120),'6':(50,220), '7':(0,0)}
 
-
-
-gD=9
+gD=14
 gT=7
-wD=9
+wD=3
 wT=12
 
 row_labels = ['X','A', 'B', 'C', 'D', 'E', 'F', 'X']
@@ -374,40 +426,19 @@ ab= abstaende(numbers)
 ha,jKnotenM,kostenM = hilfsgraph(weite,numbers,ab)
 dkm=direkteTruckKosten(ab,gT)
 
-mitWas = np.empty(shape=(len(numbers),len(numbers)), dtype = str)
-for i in range (len(numbers)):
-        for j in range (len(numbers)):
-            mitWas[i][j] = '/'
+
+M_X0= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+M_X= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+M_A= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+M_B= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+M_C= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+M_D= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+M_E= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+M_F= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+
 
 P,V = findingshortP()
 
-
-
-M_X= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
-M_A= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
-M_B= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
-M_C= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
-M_D= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
-M_E= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
-M_F= [[None for x in range(len(numbers))] for y in range(len(numbers))] 
-# mydict["1"]=M_X
-# print(mydict)
-dfM_X = pd.DataFrame(M_X, columns=column_labels, index=row_labels)
-dfM_A = pd.DataFrame(M_A, columns=column_labels, index=row_labels)
-dfM_B = pd.DataFrame(M_B, columns=column_labels, index=row_labels)
-dfM_C = pd.DataFrame(M_C, columns=column_labels, index=row_labels)
-dfM_D = pd.DataFrame(M_D, columns=column_labels, index=row_labels)
-dfM_E = pd.DataFrame(M_E, columns=column_labels, index=row_labels)
-dfM_F = pd.DataFrame(M_F, columns=column_labels, index=row_labels)
-
-    
-print('M_X',dfM_X, sep='\n')
-print('M_A',dfM_A, sep='\n')
-print('M_B',dfM_B, sep='\n')
-print('M_C',dfM_C, sep='\n')
-print('M_D',dfM_D, sep='\n')
-print('M_E',dfM_E, sep='\n')
-print('M_F',dfM_F, sep='\n')
 #pandas
 pd.options.display.float_format = '{:0.0f}'.format
 print('')
@@ -435,11 +466,6 @@ print('')
 dfjKnotenM = pd.DataFrame(jKnotenM, columns=column_labels, index=row_labels)
 print('Knotenmatrix',dfjKnotenM, sep='\n')
 
-mitW = pd.DataFrame(mitWas, columns=column_labels, index=row_labels)
-print('mit Was',mitW, sep='\n')
-
-print('')
-
 print('')
 print(numbers)
 print('')
@@ -449,10 +475,23 @@ print('')
 dfV = pd.DataFrame(V, columns=['X'], index=row_labels)
 print('V',dfV.T, sep='\n')
 print('')
-# Sa = Split_Algo_Step2()
-# print ('Sa')
-# print(Sa)
+dfM_X0 = pd.DataFrame(M_X0, columns=column_labels, index=row_labels)
+dfM_X = pd.DataFrame(M_X, columns=column_labels, index=row_labels)
+dfM_A = pd.DataFrame(M_A, columns=column_labels, index=row_labels)
+dfM_B = pd.DataFrame(M_B, columns=column_labels, index=row_labels)
+dfM_C = pd.DataFrame(M_C, columns=column_labels, index=row_labels)
+dfM_D = pd.DataFrame(M_D, columns=column_labels, index=row_labels)
+dfM_E = pd.DataFrame(M_E, columns=column_labels, index=row_labels)
+dfM_F = pd.DataFrame(M_F, columns=column_labels, index=row_labels)
 
+print('M_X0',dfM_X0, sep='\n')  
+print('M_A',dfM_A, sep='\n')
+print('M_B',dfM_B, sep='\n')
+print('M_C',dfM_C, sep='\n')
+print('M_D',dfM_D, sep='\n')
+print('M_E',dfM_E, sep='\n')
+print('M_F',dfM_F, sep='\n')
+print('M_X',dfM_X, sep='\n')
 
 
 plt.draw()
