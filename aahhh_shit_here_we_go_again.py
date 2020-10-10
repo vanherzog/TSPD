@@ -120,10 +120,10 @@ def hilfsgraph(weite, numbers, ab):
         for k in range(i+2, len(numbers)):
             #d ist der kürzeste weg von allen j verschiebungen, mit festem i und k
             #dt ist der weg vom temporären j
-            d = 399
-            dt = 400
-            c = 400
-            ct = 399
+            d = 599
+            dt =600
+            c = 600
+            ct = 599
             for j in range(i+1, len(numbers)):
                 if(numbers[j] == numbers[k]):
                     break
@@ -142,7 +142,7 @@ def hilfsgraph(weite, numbers, ab):
                     #kk = None
 
             #400 ist die weiteste entfernung die die Drohne fliegen könnte (Limit)
-            if(c<400):
+            if(c<600):
                 ha[numbers[i]][numbers[k]]= round(d,2) 
                 kostenM[numbers[i]][numbers[k]] = "{:f}".format(float(c))
             else:
@@ -259,7 +259,7 @@ def kosten(i, j, k, gD, gT, wD, wT):
     
 
     #Wer muss warten
-    dif = zeitIJK - zeitSubIK
+    dif = (zeitIJK - zeitSubIK) / 5
 
     #WarteKosten des Truck und der Drohne
     if(dif > 0):
@@ -275,15 +275,19 @@ def kosten(i, j, k, gD, gT, wD, wT):
     #einsparung positiv
     
     #nach der Formel in 44
+    #px = 'costSubIK = ' + costSubIK + ', costIJK = ' + costIJK + ', warteKostenD = ' + warteKostenD + ', warteKostenT = ' + warteKostenT
+    #print(pe)
     cost = costSubIK + costIJK + warteKostenD + warteKostenT
 
     return cost
 
 def direkteTruckKosten(ab,gT):
     dkm = np.zeros(shape=(len(numbers),len(numbers)))
+
     #direkte Abstände in numbers eintragen (weite[i] hat schon kosten drin)
     for i in range(len(numbers)-1):
         dkm[numbers[i]][numbers[i+1]]=weite[i]
+
     #alle anderen abstände eintragen (bögen im Hilfsgraph) abstände werden kumuliert mit jeder weiteren Pos
     for j in range(len(numbers)-2):
         for k in range (j+1,len(numbers)-1):
@@ -309,12 +313,19 @@ def findingshortP():
             #wenn es kein J gibt, dann gibt es auch keinen Drohnenflug
             if math.isnan(tmpJ):
                 continue
-            tmpJcost = V[numbers[i]] + kosten(numbers[i], numbers[int(tmpJ)], numbers[k], gD, gT, wD, wT)
+            tmpJcost = V[numbers[i]] + kosten(numbers[i], int(tmpJ), numbers[k], gD, gT, wD, wT)
             #bester Drohnenflug? bzw bestes J?
             if tmpJcost < indirekt:
                 indirekt = tmpJcost
-                finalJ = tmpJ
-                finalI = i
+                finalJ = deepcopy(tmpJ)
+                #prints
+                NIKIi = i
+                NIKIj = deepcopy(tmpJ)
+                NIKIk = k
+
+                finalI = deepcopy(i)    
+            py = 'FINALJ = ' + str(finalJ) + '| tmpJ = ' + str(tmpJ) + '| bei I =' + str(i) + '| k = ' + str(k)
+            print(py)
         if direkt < indirekt:
             P[numbers[k]] = numbers[k-1]
             V[numbers[k]] = direkt
@@ -325,45 +336,42 @@ def findingshortP():
             #benachbarte Truckstrecke
             pc = 'Benachbarbartes T einfügen| numbers von k-1 = ' + str(numbers[k-1]) + '| numbers von k = ' + str(numbers[k])
             print(pc)
-            setMatrix(str(numbers[k]),k-1,k,'T')
-            
-            #copyMatrix(k-1,k) #von NIKI eingefügt, kann falsch sein
+            setMatrix(str(numbers[k]),numbers[k-1],numbers[k],'T')
             
         else:
             P[numbers[k]]=numbers[finalI]
             V[numbers[k]]=indirekt
 
             #kopieren bis I
-            pf = 'Matrix Kopieren| numbers von k-1 = ' + str(numbers[k-1]) +'| numbers von finalI = ' + str(numbers[finalI])
+            pf = 'Matrix Kopieren| numbers von k = ' + str(numbers[k]) +'| numbers von finalI = ' + str(numbers[finalI])
             print(pf)
             copyMatrix(str(numbers[k]),str(int(numbers[finalI])))
-            pa = 'I = ' + str(numbers[finalI]) +  ', J Knoten = ' + str(numbers[int(finalJ)]) + ', K = ' + str(numbers[k])
+            pa = 'FINAL I = ' + str(numbers[finalI]) +  ', J Knoten = ' + str(int(finalJ)) + ', K = ' + str(numbers[k]) + '| NIKI-i = ' + str(NIKIi) + '| NIKI-J = ' + str(numbers[int(NIKIj)])  + '| NIKI- k = ' + str(NIKIk) 
             print(pa)
             #Truckstrecke während Drohnenflug
             for x in range (finalI,k):
-                if finalJ == x:
+                if numbers.index(finalJ) == x:
                     x = x+1
-                if x+1 == finalJ:
-                    setMatrix(str(numbers[k]),x,x+2,'T')
+                if x+1 == numbers.index(finalJ):
+                    setMatrix(str(numbers[k]),numbers[x],numbers[x+2],'T')
                     if x+2 == k:
                         break
                 else:
-                    setMatrix(str(numbers[k]),x,x+1,'T')
+                    setMatrix(str(numbers[k]),numbers[x],numbers[x+1],'T')
             pd = 'Drohnen T eingefügt| numbers von i = ' + str(numbers[i]) +'| numbers von k = ' + str(numbers[k])
             print(pd)
             #Drohnenflug
-            pe = '1 & 2 einfügen und die alten T löschen| i = ' + str(numbers[finalI]) +  ', J Knoten = ' + str(numbers[int(finalJ)]) + ', K = ' + str(numbers[k])
+            pe = '1 & 2 einfügen und die alten T löschen| i = ' + str(numbers[finalI]) +  ', J Knoten = ' + str(int(finalJ)) + ', K = ' + str(numbers[k])
             print(pe)
 
-            setMatrix(str(numbers[k]),int(finalI),int(finalJ),'1')
-            setMatrix(str(numbers[k]),int(finalJ),k,'2')
-            #deleteMatrix(str(numbers[k]),int(finalI),int(finalJ),'T')
-            #deleteMatrix(str(numbers[k]),int(finalJ),k,'T')
+            setMatrix(str(numbers[k]),int(numbers[finalI]),int(finalJ),'1')
+            setMatrix(str(numbers[k]),int(finalJ),numbers[k],'2')
+
+            #finalJ ist schon wegen tmpJ nach numbers sortiert
 
 
     return P,V 
 
-#kopieren läuft schief & das alte T wird nicht gelöscht wo jetzt die Drohne hinfliegt und 1&2 gehen teilweise gegen die Richtung
 
 def setMatrix(m,y,x,sign):
 
@@ -378,7 +386,7 @@ def setMatrix(m,y,x,sign):
         '7':M_X
     }.get(m,None)
 
-    switcher[numbers[y]][numbers[x]]=sign
+    switcher[y][x]=sign
 
     dfM_X0 = pd.DataFrame(M_X0, columns=column_labels, index=row_labels)
     dfM_X = pd.DataFrame(M_X, columns=column_labels, index=row_labels)
@@ -390,49 +398,15 @@ def setMatrix(m,y,x,sign):
     dfM_F = pd.DataFrame(M_F, columns=column_labels, index=row_labels)
 
     print('M_X0',dfM_X0, sep='\n')  
-    print('M_X',dfM_X, sep='\n')
     print('M_A',dfM_A, sep='\n')
     print('M_B',dfM_B, sep='\n')
     print('M_C',dfM_C, sep='\n')
     print('M_D',dfM_D, sep='\n')
     print('M_E',dfM_E, sep='\n')
     print('M_F',dfM_F, sep='\n')
+    print('M_X',dfM_X, sep='\n')
 
     #return switcher
-
-
-# def deleteMatrix(m,y,x,sign): 
-
-#      switcher = {
-#         '1':M_A,
-#         '2':M_B,
-#         '3':M_C,
-#         '4':M_D,
-#         '5':M_E,
-#         '6':M_F,
-#         '7':M_X
-#     }.get(m,None)
-
-#     if (switcher[numbers[y]][numbers[x]] == sign):
-#         switcher[numbers[y]][numbers[x]] = '/'
-
-#     dfM_X0 = pd.DataFrame(M_X0, columns=column_labels, index=row_labels)
-#     dfM_X = pd.DataFrame(M_X, columns=column_labels, index=row_labels)
-#     dfM_A = pd.DataFrame(M_A, columns=column_labels, index=row_labels)
-#     dfM_B = pd.DataFrame(M_B, columns=column_labels, index=row_labels)
-#     dfM_C = pd.DataFrame(M_C, columns=column_labels, index=row_labels)
-#     dfM_D = pd.DataFrame(M_D, columns=column_labels, index=row_labels)
-#     dfM_E = pd.DataFrame(M_E, columns=column_labels, index=row_labels)
-#     dfM_F = pd.DataFrame(M_F, columns=column_labels, index=row_labels)
-
-#     print('M_X0',dfM_X0, sep='\n')  
-#     print('M_X',dfM_X, sep='\n')
-#     print('M_A',dfM_A, sep='\n')
-#     print('M_B',dfM_B, sep='\n')
-#     print('M_C',dfM_C, sep='\n')
-#     print('M_D',dfM_D, sep='\n')
-#     print('M_E',dfM_E, sep='\n')
-#     print('M_F',dfM_F, sep='\n')
 
 
 def copyMatrix(kM,copy):
@@ -475,8 +449,6 @@ def copyMatrix(kM,copy):
     elif kM == '7':
         M_X=deepcopy(stitcher)
 
-    
-
     dfM_X0 = pd.DataFrame(M_X0, columns=column_labels, index=row_labels)
     dfM_X = pd.DataFrame(M_X, columns=column_labels, index=row_labels)
     dfM_A = pd.DataFrame(M_A, columns=column_labels, index=row_labels)
@@ -487,13 +459,14 @@ def copyMatrix(kM,copy):
     dfM_F = pd.DataFrame(M_F, columns=column_labels, index=row_labels)
 
     print('M_X0',dfM_X0, sep='\n')  
-    print('M_X',dfM_X, sep='\n')
     print('M_A',dfM_A, sep='\n')
     print('M_B',dfM_B, sep='\n')
     print('M_C',dfM_C, sep='\n')
     print('M_D',dfM_D, sep='\n')
     print('M_E',dfM_E, sep='\n')
     print('M_F',dfM_F, sep='\n')
+    print('M_X',dfM_X, sep='\n')
+
 
     
 
@@ -519,9 +492,9 @@ node_list = ['X','A','B','C','D','E','F']
 pos={'X':(0,0),'A':(220,20),'B':(270,70),'C':(250,210),'D':(90,60),'E':(120,120),'F':(50,220)}
 posnumbers={'0':(0,0),'1':(220,20),'2':(270,70),'3':(250,210),'4':(90,60),'5':(120,120),'6':(50,220), '7':(0,0)}
 
-gD=9
+gD=14
 gT=7
-wD=9
+wD=3
 wT=12
 
 row_labels = ['X','A', 'B', 'C', 'D', 'E', 'F', 'X']
@@ -598,13 +571,13 @@ dfM_E = pd.DataFrame(M_E, columns=column_labels, index=row_labels)
 dfM_F = pd.DataFrame(M_F, columns=column_labels, index=row_labels)
 
 print('M_X0',dfM_X0, sep='\n')  
-print('M_X',dfM_X, sep='\n')
 print('M_A',dfM_A, sep='\n')
 print('M_B',dfM_B, sep='\n')
 print('M_C',dfM_C, sep='\n')
 print('M_D',dfM_D, sep='\n')
 print('M_E',dfM_E, sep='\n')
 print('M_F',dfM_F, sep='\n')
+print('M_X',dfM_X, sep='\n')
 
 
 plt.draw()
