@@ -96,14 +96,16 @@ the truck and later rejoins the truck at another location. Each customer is visi
 drone. Both vehicles must start from and return to the depot. When a customer is serviced by the truck, this is called a truck delivery,
 while when a customer is serviced by the drone, this is called a drone delivery. This is represented as a 3-tuple 〈i,j,k〉, where i is a
 launch node, j is a drone node (a customer who will be serviced by the drone), and k is a rendezvous node, as listed below:
-• Node i is a launch node at which the truck launches the drone. The launching operation must be carried out at a customer location
+
+* Node i is a launch node at which the truck launches the drone. The launching operation must be carried out at a customer location
 or the depot. The time required to launch the drone is denoted as sL.
-• Node j is a node serviced by the drone, called a “drone node”. We also note that not every node in the graph is a drone node.
+* Node j is a node serviced by the drone, called a “drone node”. We also note that not every node in the graph is a drone node.
 Because some customers might demand delivery a product with size and weight larger than the capacity of the drone.
-• Node k is a customer location where the drone rejoins the truck. At node k, the two vehicles meet again; therefore, we call it
+* Node k is a customer location where the drone rejoins the truck. At node k, the two vehicles meet again; therefore, we call it
 “rendezvous node”. While waiting for the drone to return from a delivery, the truck can make other truck deliveries. The time
 required to retrieve the drone and prepare for the next drone delivery is denoted as sR. Moreover, the two vehicles can wait for
 each other at the rendezvous point.
+
 Moreover, the drone has an “endurance”, which can be measured as the maximum time the drone can operate without recharging.
 A tuple 〈i,j,k〉 is called feasible if the drone has sufficient power to launch from i, deliver to j and rejoin the truck at k. The drone can
 be launched from the depot but must subsequently rejoin the truck at a customer location. Finally, the drone’s last rendezvous with
@@ -115,7 +117,9 @@ than the truck, hence, consuming much less energy. In addition, it is not run by
 truck provides new fresh batteries for the drone (or recharges its batteries completely) before each drone delivery begins. When a
 vehicle has to wait for each other, a penalty is created and added to the transportation cost to form the total operational cost of the
 system. The waiting costs of truck and drone are calculated by:
-waiting costtruck = α × waiting time andwaiting costdrone = β × waiting time
+
+### waiting costtruck = α × waiting time andwaiting costdrone = β × waiting time
+
 where α and β are the waiting fees of truck and drone per unit of time, respectively. The use of these coefficients is flexible to model a
 number of situations in reality. Typically, α can be used to represent parking fee and labour cost of the truck driver, while β can
 model costs resulted by battery energy consumption of drone. In some contexts where a delivery company does not have to pay
