@@ -1,4 +1,6 @@
-1. Introduction
+# On the min-cost Traveling Salesman Problem with Drone
+
+## 1. Introduction
 
 Companies always tend to look for the most cost-efficient methods to distribute goods across logistic networks (Rizzoli et al.,
 2007). Traditionally, trucks have been used to handle these tasks and the corresponding transportation problem is modelled as a
@@ -86,7 +88,7 @@ formulation is introduced in Section 3. We describe our two heuristics in Sectio
 including instance generations and settings. We discuss the computational results in Section 7. Finally, Section 8 concludes the work
 and provides suggestions for future research.
 
-2. Problem definition
+## 2. Problem definition
 
 In this section, we provide a description of the problem and discuss a model for the min-cost TSP-D in a step-by-step manner.
 Here, we consider a list of customers to whom a truck and a drone will deliver parcels. To make a delivery, the drone is launched from
@@ -127,3 +129,6 @@ times more expensive than that of the drone and α, β both are set to null are 
 We now develop the model for the problem. We first define basic notations relating to the graph, sequence and subsequence.
 Then, we formally define drone delivery and the solution representation as well as the associated constraints and objective.
 
+
+![Fig. 1. Optimal solution: TSP vs. min-cost TSP-D. TSP Objective=1500, min-cost TSP-D Objective=1000.82. The solid arcs are truck’s path. The dash arcs are
+drone’s path.](https://github.com/vanherzog/TSPD/blob/master/Figure%201.png)
