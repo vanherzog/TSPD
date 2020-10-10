@@ -226,8 +226,6 @@ def print_hilfsgraph(ha):
                     )
     
     nx.draw_networkx_labels(H,posnumbers,font_size=1, font_family="sans-serif")
-    # plt.draw()
-    # plt.show()
 
 
 def kosten(i, j, k, gD, gT, wD, wT):
@@ -254,10 +252,6 @@ def kosten(i, j, k, gD, gT, wD, wT):
     #Zeit der Drohne
     zeitIJK = (ab[i][j] + ab[j][k]) /gD
 
-    #Einsparung der geänderten Strecke des Truck
-    #einsparung = (ab[i][k] - ab[i][j] - ab[j][k]) /gT 
-    
-
     #Wer muss warten
     dif = (zeitIJK - zeitSubIK) / 5
 
@@ -270,13 +264,6 @@ def kosten(i, j, k, gD, gT, wD, wT):
     #die Drohne ist 25mal billiger als der Truck
     costIJK = zeitIJK/25
     costSubIK = zeitSubIK  
-
-
-    #einsparung positiv
-    
-    #nach der Formel in 44
-    #px = 'costSubIK = ' + costSubIK + ', costIJK = ' + costIJK + ', warteKostenD = ' + warteKostenD + ', warteKostenT = ' + warteKostenT
-    #print(pe)
     cost = costSubIK + costIJK + warteKostenD + warteKostenT
 
     return cost
@@ -318,24 +305,16 @@ def findingshortP():
             if tmpJcost < indirekt:
                 indirekt = tmpJcost
                 finalJ = deepcopy(tmpJ)
-                #prints
-                NIKIi = i
-                NIKIj = deepcopy(tmpJ)
-                NIKIk = k
-
                 finalI = deepcopy(i)    
-            py = 'FINALJ = ' + str(finalJ) + '| tmpJ = ' + str(tmpJ) + '| bei I =' + str(i) + '| k = ' + str(k)
-            print(py)
+
         if direkt < indirekt:
             P[numbers[k]] = numbers[k-1]
             V[numbers[k]] = direkt
             #kopieren des Vorgängers
-            pe = 'Matrix Kopieren|  numbers von k-1 = ' + str(numbers[k-1]) +'| numbers von k = ' + str(numbers[k])
-            print(pe)
+
             copyMatrix(str(numbers[k]),str(numbers[k-1]))
             #benachbarte Truckstrecke
-            pc = 'Benachbarbartes T einfügen| numbers von k-1 = ' + str(numbers[k-1]) + '| numbers von k = ' + str(numbers[k])
-            print(pc)
+
             setMatrix(str(numbers[k]),numbers[k-1],numbers[k],'T')
             
         else:
@@ -343,11 +322,8 @@ def findingshortP():
             V[numbers[k]]=indirekt
 
             #kopieren bis I
-            pf = 'Matrix Kopieren| numbers von k = ' + str(numbers[k]) +'| numbers von finalI = ' + str(numbers[finalI])
-            print(pf)
             copyMatrix(str(numbers[k]),str(int(numbers[finalI])))
-            pa = 'FINAL I = ' + str(numbers[finalI]) +  ', J Knoten = ' + str(int(finalJ)) + ', K = ' + str(numbers[k]) + '| NIKI-i = ' + str(NIKIi) + '| NIKI-J = ' + str(numbers[int(NIKIj)])  + '| NIKI- k = ' + str(NIKIk) 
-            print(pa)
+
             #Truckstrecke während Drohnenflug
             for x in range (finalI,k):
                 if numbers.index(finalJ) == x:
@@ -358,12 +334,7 @@ def findingshortP():
                         break
                 else:
                     setMatrix(str(numbers[k]),numbers[x],numbers[x+1],'T')
-            pd = 'Drohnen T eingefügt| numbers von i = ' + str(numbers[i]) +'| numbers von k = ' + str(numbers[k])
-            print(pd)
             #Drohnenflug
-            pe = '1 & 2 einfügen und die alten T löschen| i = ' + str(numbers[finalI]) +  ', J Knoten = ' + str(int(finalJ)) + ', K = ' + str(numbers[k])
-            print(pe)
-
             setMatrix(str(numbers[k]),int(numbers[finalI]),int(finalJ),'1')
             setMatrix(str(numbers[k]),int(finalJ),numbers[k],'2')
 
@@ -387,26 +358,6 @@ def setMatrix(m,y,x,sign):
     }.get(m,None)
 
     switcher[y][x]=sign
-
-    dfM_X0 = pd.DataFrame(M_X0, columns=column_labels, index=row_labels)
-    dfM_X = pd.DataFrame(M_X, columns=column_labels, index=row_labels)
-    dfM_A = pd.DataFrame(M_A, columns=column_labels, index=row_labels)
-    dfM_B = pd.DataFrame(M_B, columns=column_labels, index=row_labels)
-    dfM_C = pd.DataFrame(M_C, columns=column_labels, index=row_labels)
-    dfM_D = pd.DataFrame(M_D, columns=column_labels, index=row_labels)
-    dfM_E = pd.DataFrame(M_E, columns=column_labels, index=row_labels)
-    dfM_F = pd.DataFrame(M_F, columns=column_labels, index=row_labels)
-
-    print('M_X0',dfM_X0, sep='\n')  
-    print('M_A',dfM_A, sep='\n')
-    print('M_B',dfM_B, sep='\n')
-    print('M_C',dfM_C, sep='\n')
-    print('M_D',dfM_D, sep='\n')
-    print('M_E',dfM_E, sep='\n')
-    print('M_F',dfM_F, sep='\n')
-    print('M_X',dfM_X, sep='\n')
-
-    #return switcher
 
 
 def copyMatrix(kM,copy):
@@ -449,43 +400,6 @@ def copyMatrix(kM,copy):
     elif kM == '7':
         M_X=deepcopy(stitcher)
 
-    dfM_X0 = pd.DataFrame(M_X0, columns=column_labels, index=row_labels)
-    dfM_X = pd.DataFrame(M_X, columns=column_labels, index=row_labels)
-    dfM_A = pd.DataFrame(M_A, columns=column_labels, index=row_labels)
-    dfM_B = pd.DataFrame(M_B, columns=column_labels, index=row_labels)
-    dfM_C = pd.DataFrame(M_C, columns=column_labels, index=row_labels)
-    dfM_D = pd.DataFrame(M_D, columns=column_labels, index=row_labels)
-    dfM_E = pd.DataFrame(M_E, columns=column_labels, index=row_labels)
-    dfM_F = pd.DataFrame(M_F, columns=column_labels, index=row_labels)
-
-    print('M_X0',dfM_X0, sep='\n')  
-    print('M_A',dfM_A, sep='\n')
-    print('M_B',dfM_B, sep='\n')
-    print('M_C',dfM_C, sep='\n')
-    print('M_D',dfM_D, sep='\n')
-    print('M_E',dfM_E, sep='\n')
-    print('M_F',dfM_F, sep='\n')
-    print('M_X',dfM_X, sep='\n')
-
-
-    
-
-# def Split_Algo_Step2():
-
-#     j = len(numbers) -1
-#     i = 9999
-#     Sa = []
-#     Sa.append(numbers[j])
-    
-#     while i != 0 :
-#         i = P[j]
-#         Sa.append(i)
-#         j = i
-
-#     #reverse    
-#     Sa = Sa[::-1]
-
-#     return Sa
 
 
 node_list = ['X','A','B','C','D','E','F'] 
