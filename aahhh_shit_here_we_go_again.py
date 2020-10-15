@@ -7,10 +7,9 @@ from copy import deepcopy
  
 G = nx.MultiDiGraph(format='png', directed=True)
 
+H = nx.MultiDiGraph(format='png', directed=True)
+
 def plot_weighted_graph(node_list,pos):
-    
-    
-    
     
     #random nodelist
     
@@ -28,6 +27,12 @@ def plot_weighted_graph(node_list,pos):
         G.add_node(node,pos=pos[node])
         G.add_edges_from([(node,node2)])
 
+    #initialize H Graph
+    global H
+    H = G.__class__()
+    H.add_nodes_from(G)
+    
+
     #edge range
     pos1=[]
     pos2=[]
@@ -40,7 +45,7 @@ def plot_weighted_graph(node_list,pos):
         weite[counter]=round(weite[counter],1)
         nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list[counter],copy[counter]):weite[counter]})
 
-
+    
     #draws
     nx.draw_networkx_nodes(G,pos)
     nx.draw_networkx_labels(G,pos,font_size=10, font_family="sans-serif")
@@ -48,8 +53,9 @@ def plot_weighted_graph(node_list,pos):
     nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list[counter],copy[counter]):weite[counter]})
 
     weite.insert(len(weite),None)
-    # plt.draw()
-    # plt.show()
+
+    f1=plt.figure()
+
     print(node_list)
     print(weite)
 
@@ -343,6 +349,55 @@ def findingshortP():
 
     return P,V 
 
+def drohnenGraph(H):
+    node_list2 = ['X','A','B','C','D','E','F'] 
+    nx.draw_networkx_nodes(H,pos)
+    nx.draw_networkx_labels(H,pos,font_size=10, font_family="sans-serif")
+    for i in range(len(M_X)-1):
+        for j in range(len(M_X[0])):
+            #Drohnenpfeil
+            if M_X[i][j]=='1' or M_X[i][j]=='2':
+                #X gleich X_0 
+                if j==len(M_X[0])-1:
+                    H.add_edges_from([(node_list2[i],node_list2[0])])
+                    nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list2[i],node_list2[0]): str(int(round(ab[i][0]/gD,0))) +'s' })
+                else:
+                    H.add_edges_from([(node_list2[i],node_list2[j])])
+                    nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list2[i],node_list2[j]):  str(int(round(ab[i][j]/gD,0))) +'s' })
+                nx.draw_networkx_edges(H,pos,edge_color="b")
+                
+            #Truckpfeil
+            if M_X[i][j]=='T':
+                #X gleich X_0
+                if j==len(M_X[0])-1:
+                    liste=[[node_list2[i],node_list2[0]]]
+                    nx.draw_networkx_edges(H,pos,edge_color="y",edgelist=liste )
+                    nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list2[i],node_list2[0]):str(int(round(ab[i][0]/gT,0))) +'s' })
+                else:
+                    liste=[[node_list2[i],node_list2[j]]]
+                    nx.draw_networkx_edges(H,pos,edge_color="y",edgelist=liste )
+                    nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list2[i],node_list2[j]): str(int(round(ab[i][j]/gT,0))) +'s' })
+
+    offset =15
+    pos_labels = {}
+    keys = pos.keys()
+    labels={}
+    r=0
+    for key in keys:
+        
+        print(key)
+        x, y = pos[key]
+        pos_labels[key] = (x, y+offset)
+        if key == 'X':
+            labels[key]= int(round(V[len(V)-1]))
+        else:
+            labels[key]= int(round(V[r]))
+        r=r+1
+    nx.draw_networkx_labels(H,pos=pos_labels,labels=labels,fontsize=2)                 
+    
+    global f2
+    f2=plt.figure(2)
+
 
 def setMatrix(m,y,x,sign):
 
@@ -475,6 +530,8 @@ print('')
 dfV = pd.DataFrame(V, columns=['X'], index=row_labels)
 print('V',dfV.T, sep='\n')
 print('')
+drohnenGraph(H)
+
 dfM_X0 = pd.DataFrame(M_X0, columns=column_labels, index=row_labels)
 dfM_X = pd.DataFrame(M_X, columns=column_labels, index=row_labels)
 dfM_A = pd.DataFrame(M_A, columns=column_labels, index=row_labels)
@@ -493,6 +550,4 @@ print('M_E',dfM_E, sep='\n')
 print('M_F',dfM_F, sep='\n')
 print('M_X',dfM_X, sep='\n')
 
-
-plt.draw()
 plt.show()
