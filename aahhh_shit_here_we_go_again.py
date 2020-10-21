@@ -45,7 +45,7 @@ def plot_weighted_graph(node_list,pos):
         weite[counter]=round(weite[counter],1)
         nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list[counter],copy[counter]):weite[counter]})
 
-    
+
     #draws
     nx.draw_networkx_nodes(G,pos)
     nx.draw_networkx_labels(G,pos,font_size=10, font_family="sans-serif")
@@ -76,7 +76,6 @@ def umschreiben(node_list):
     numbers.insert(len(numbers),7)
     print(numbers)
 
-    print(numbers)
     return numbers
 
 
@@ -175,6 +174,31 @@ def abstaende(numbers):
         for b in range (len(numbers)):
             ab[a][b]= round(math.hypot( round(abs( xcoord[a]-xcoord[b]  ),1) ,round(abs(  ycoord[a]-ycoord[b] ),1) ),1)
     return ab
+
+#k-nearest Neighbour = ändert die Reihenfolge von Numbers und dementsprechend auch weite weil es neue Nachbarn gibt
+def knn():
+    OG = ['X','A','B','C','D','E','F']
+    new = []
+    newWeite = []
+    new.append(0)
+    best = deepcopy(999)
+    i = 0
+    while len(new) < len(OG):
+        for j in range (len(OG)):
+            tbest = ab[i][j]
+            if tbest < best and j not in new:
+                best = deepcopy(tbest)
+                save = deepcopy(j)
+        new.append(save)
+        newWeite.append(best)
+        best = deepcopy(999)
+        i = save
+    new.append(7)
+    newWeite.append(ab[save][7])
+    newWeite.append(None)
+
+    return new, newWeite
+
 
 def test(ha):
     edges=[]
@@ -457,6 +481,9 @@ def copyMatrix(kM,copy):
 
 
 
+
+
+
 node_list = ['X','A','B','C','D','E','F'] 
 pos={'X':(0,0),'A':(220,20),'B':(270,70),'C':(250,210),'D':(90,60),'E':(120,120),'F':(50,220)}
 posnumbers={'0':(0,0),'1':(220,20),'2':(270,70),'3':(250,210),'4':(90,60),'5':(120,120),'6':(50,220), '7':(0,0)}
@@ -475,9 +502,14 @@ column_labels = ['X','A', 'B', 'C', 'D', 'E', 'F', 'X']
 #jKnotenM= Knotenmatrix (alle Knoten(j) die für position (i,k) verwendet werden)
 #direkteKostenmatrix= ab/truckkosten für direkte nachbarn
 #billigstekostenMatrix= ha/kosten für alle drohnenfahrten
+
 weite,node_list=plot_weighted_graph(node_list,pos)
 numbers=umschreiben(node_list)
 ab= abstaende(numbers)
+
+#K-nearest neighbour 
+numbers,weite = knn()
+
 ha,jKnotenM,kostenM = hilfsgraph(weite,numbers,ab)
 dkm=direkteTruckKosten(ab,gT)
 
