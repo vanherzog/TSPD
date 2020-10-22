@@ -199,6 +199,42 @@ def knn():
 
     return new, newWeite
 
+#k-cheapest insertion
+def kci(numbers):
+    new=[]
+    gesamtweite=[]
+    copy= deepcopy(numbers)
+    subtour=copy[0:4]
+    insertions=copy[4:7]
+    for i in range(3):
+        #nächster subtour Knoten einfügen
+        new.append(subtour[i])
+        #bester Knoten
+        bestKnoten=9
+        #beste Weite
+        bestWeite=9999
+        for j in range(3):
+            #weite von d(i,v)+d(v,j)
+            weite1 = ab[ subtour[i] ][ insertions[j] ]
+            weite2 = ab[ insertions[j] ][ subtour[i+1] ]
+            weite = weite1 + weite2
+            if weite < bestWeite and insertions[j] not in new:
+                bestWeite = weite
+                bestKnoten = insertions[j]
+        #beste insertion einfügen
+        gesamtweite.append(round(bestWeite,1))
+        new.append(bestKnoten)
+        
+    
+    #letzter aus subtour hinzufügen
+    new.append( subtour[len(subtour)-1] )
+    #depot hinzufügen
+    new.append( numbers[len(numbers)-1] )
+    #vom letzten zum depot abstand
+    gesamtweite.append(round( ab[ new[len(new)-2] ][ new[len(new)-1] ] ,1))
+    return new, gesamtweite
+
+#länge anpassen an 8 elemente, verwendete entfernen
 
 def test(ha):
     edges=[]
@@ -508,7 +544,14 @@ numbers=umschreiben(node_list)
 ab= abstaende(numbers)
 
 #K-nearest neighbour 
-numbers,weite = knn()
+#TODO kritscher hase, niklas: 2 numbers ist gefährlich
+#numbers,weite = knn()
+#K-cheapest insertion
+cheapest_insertion_numbers ,cheapest_insertion_weite =kci(numbers)
+print('kci:')
+print(cheapest_insertion_numbers)
+print(cheapest_insertion_weite)
+
 
 ha,jKnotenM,kostenM = hilfsgraph(weite,numbers,ab)
 dkm=direkteTruckKosten(ab,gT)
