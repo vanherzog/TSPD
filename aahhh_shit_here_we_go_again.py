@@ -178,22 +178,32 @@ def abstaende(numbers):
 #k-nearest Neighbour = ändert die Reihenfolge von Numbers und dementsprechend auch weite weil es neue Nachbarn gibt
 def knn():
     OG = ['X','A','B','C','D','E','F']
+    #neue Numbers & weite
     new = []
     newWeite = []
+    #Depot ist IMMER am Anfang
     new.append(0)
     best = deepcopy(999)
     i = 0
+    #Ich appende bei new immer Sachen dazu nach jedem Durchlauf bis es so lang ist wie OG
     while len(new) < len(OG):
+        #alle Knoten durchlaufen um den nähesten zu finden
         for j in range (len(OG)):
+            #Abstand ausrechnen
             tbest = ab[i][j]
+            #Wenn der aktuelle Knoten(tbest) näher ist als der bisher gespeicherte(best) und dieser Knoten noch nicht hinzugefügt wurde
             if tbest < best and j not in new:
                 best = deepcopy(tbest)
                 save = deepcopy(j)
+        #Wenn alle Knoten durchgelaufen wurden, den nähesten hinzufügen und auch die dazugehörige weite 
         new.append(save)
         newWeite.append(best)
         best = deepcopy(999)
+        #Jetzt für den neu zugefügten Knoten, wieder den nähesten suchen
         i = save
+    #Depot ist IMMER das Ende
     new.append(7)
+    #Die letzte Enfernung zum Depot hinzufügen und NONE weil vom ENDDEPOT(X) zum ANFANGSDEPOT(XO) kein Abstand mehr ist
     newWeite.append(ab[save][7])
     newWeite.append(None)
 
@@ -547,6 +557,7 @@ ab= abstaende(numbers)
 #TODO kritscher hase, niklas: 2 numbers ist gefährlich
 #numbers,weite = knn()
 #K-cheapest insertion
+#numbers,weite =kci(numbers)
 cheapest_insertion_numbers ,cheapest_insertion_weite =kci(numbers)
 print('kci:')
 print(cheapest_insertion_numbers)
