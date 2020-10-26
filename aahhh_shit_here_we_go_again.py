@@ -234,7 +234,6 @@ def kci(numbers):
     gesamtweite.append(round( ab[ new[len(new)-2] ][ new[len(new)-1] ] ,1))
     return new, gesamtweite
 
-#länge anpassen an 8 elemente, verwendete entfernen
 
 def test(ha):
     edges=[]
