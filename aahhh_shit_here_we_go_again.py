@@ -1,17 +1,18 @@
 import matplotlib.pyplot as plt
+from matplotlib import interactive
 import networkx as nx
 import numpy as np
 import math
 import pandas as pd
 from copy import deepcopy
  
-G = nx.MultiDiGraph(format='png', directed=True)
 
-H = nx.MultiDiGraph(format='png', directed=True)
 
 def plot_weighted_graph(node_list,pos):
     
     #random nodelist
+    f1=plt.figure('Random')
+
     
     copy=node_list.copy()
     depot=copy[:1]
@@ -27,11 +28,7 @@ def plot_weighted_graph(node_list,pos):
         G.add_node(node,pos=pos[node])
         G.add_edges_from([(node,node2)])
 
-    #initialize H Graph
-    global H
-    H = G.__class__()
-    H.add_nodes_from(G)
-    
+
 
     #edge range
     pos1=[]
@@ -54,10 +51,11 @@ def plot_weighted_graph(node_list,pos):
 
     weite.insert(len(weite),None)
 
-    f1=plt.figure()
+    
 
     print(node_list)
     print(weite)
+    
 
     
     return weite,node_list
@@ -135,7 +133,7 @@ def hilfsgraph(weite, numbers, ab):
 
                 #addieren beider drohnenrouten (wo keine drohnenrouten gemacht werden, also bei direkten nachbarn wird die normale distanz genommen)
                 dt = ab[numbers[i]][numbers[j]] + ab[numbers[j]][numbers[k]] 
-                ct = kosten(numbers[i], numbers[j], numbers[k],gD, gT, wD, wT)
+                ct = kosten(numbers[i], numbers[j], numbers[k],gD, gT, wD, wT,numbers)
                 
                 if(ct<c):
                     c = ct
@@ -177,6 +175,12 @@ def abstaende(numbers):
 
 #k-nearest Neighbour = ändert die Reihenfolge von Numbers und dementsprechend auch weite weil es neue Nachbarn gibt
 def knn():
+    f4=plt.figure('knn')
+    #graph referenzieren
+    global I
+    I = G.__class__()
+    I.add_nodes_from(G)
+
     OG = ['X','A','B','C','D','E','F']
     #neue Numbers & weite
     new = []
@@ -206,13 +210,34 @@ def knn():
     #Die letzte Enfernung zum Depot hinzufügen und NONE weil vom ENDDEPOT(X) zum ANFANGSDEPOT(XO) kein Abstand mehr ist
     newWeite.append(ab[save][7])
     newWeite.append(None)
-
+    #graphen konstruieren
+    for k in range(len(OG)-1):
+        I.add_edges_from([(OG[new[k]],OG[new[k+1]])])
+        nx.draw_networkx_edge_labels(J,pos,edge_labels={(OG[new[k]],OG[new[k+1]]): str(int(round(newWeite[k],0))) })
+    #letzte kante
+    I.add_edges_from([(OG[new[len(new)-2]],OG[0])])
+    nx.draw_networkx_edge_labels(J,pos,edge_labels={(OG[new[len(new)-2]],OG[0]): str(int(round(newWeite[len(newWeite)-2],0))) })
+    
+    nx.draw_networkx_nodes(I,pos)
+    nx.draw_networkx_labels(I,pos,font_size=10, font_family="sans-serif")
+    nx.draw_networkx_edges(I,pos)
+                  
     return new, newWeite
 
 #k-cheapest insertion
 def kci(numbers):
+    f5=plt.figure('kci')
+    #graph referenzieren
+    global K
+    K = G.__class__()
+    K.add_nodes_from(G)
+
+    OG = ['X','A','B','C','D','E','F']
+
     new=[]
-    gesamtweite=[]
+    newWeite=[]
+    newWeiteInnen=[]
+    newWeiteAussen=[]
     copy= deepcopy(numbers)
     subtour=copy[0:4]
     insertions=copy[4:7]
@@ -221,8 +246,11 @@ def kci(numbers):
         new.append(subtour[i])
         #bester Knoten
         bestKnoten=9
-        #beste Weite
+        #beste subtour Weite
         bestWeite=9999
+        #insertion Kanten
+        bestWeite1=999
+        bestWeite2=999
         for j in range(3):
             #weite von d(i,v)+d(v,j)
             weite1 = ab[ subtour[i] ][ insertions[j] ]
@@ -231,8 +259,12 @@ def kci(numbers):
             if weite < bestWeite and insertions[j] not in new:
                 bestWeite = weite
                 bestKnoten = insertions[j]
+                bestWeite1=weite1
+                bestWeite2=weite2
         #beste insertion einfügen
-        gesamtweite.append(round(bestWeite,1))
+        newWeiteInnen.append(round(bestWeite,1))
+        newWeiteAussen.append(round(bestWeite1,1))
+        newWeiteAussen.append(round(bestWeite2,1))
         new.append(bestKnoten)
         
     
@@ -241,8 +273,37 @@ def kci(numbers):
     #depot hinzufügen
     new.append( numbers[len(numbers)-1] )
     #vom letzten zum depot abstand
-    gesamtweite.append(round( ab[ new[len(new)-2] ][ new[len(new)-1] ] ,1))
-    return new, gesamtweite
+    newWeiteInnen.append(round( ab[ new[len(new)-2] ][ new[len(new)-1] ] ,1))
+    #newWeite(return) bestimmen
+    newWeite=deepcopy(newWeiteAussen)
+    newWeite.append(round( ab[ new[len(new)-2] ][ new[len(new)-1] ] ,1))
+    newWeite.append(None)
+
+    print(new)
+    print(newWeite)
+    print(newWeiteInnen)
+    print(newWeiteAussen)
+    #graphen konstruieren
+  
+    #äußerer Graph
+    for k in range(len(newWeite)-2):
+        K.add_edges_from([(OG[new[k]],OG[new[k+1]])])
+        nx.draw_networkx_edge_labels(K,pos,edge_labels={(OG[new[k]],OG[new[k+1]]): str(int(round(newWeite[k],0))) })
+    K.add_edges_from([(OG[new[len(new)-2]],OG[new[0]])])
+    nx.draw_networkx_edges(K,pos,edge_color="b",style='dashdot')
+    G.clear()
+    #innerer Graph
+    for k in range(len(newWeiteInnen)-1):
+        K.add_edges_from([(OG[new[k]],OG[new[k+2]])])   
+        nx.draw_networkx_edge_labels(K,pos,edge_labels={(OG[new[k]],OG[new[k+2]]): str(int(round(newWeiteInnen[k],0))) })
+        k+=1
+    nx.draw_networkx_edges(K,pos,edge_color="g",style='dotted')  
+
+    nx.draw_networkx_nodes(K,pos)
+    nx.draw_networkx_labels(K,pos,font_size=10, font_family="sans-serif")
+
+
+    return new, newWeite
 
 
 def test(ha):
@@ -253,7 +314,7 @@ def test(ha):
                 edges.append((str(i),str(j)))
     print(edges)
 
-H = nx.MultiDiGraph(format='png', directed=True)
+
 
 def print_hilfsgraph(ha):
     # Graph data
@@ -267,7 +328,7 @@ def print_hilfsgraph(ha):
 
     
     # Matplotlib figure
-    plt.figure('Hilfsgraph')
+    #plt.figure('Hilfsgraph')
 
     # Create graph
     
@@ -303,7 +364,7 @@ def print_hilfsgraph(ha):
     nx.draw_networkx_labels(H,posnumbers,font_size=1, font_family="sans-serif")
 
 
-def kosten(i, j, k, gD, gT, wD, wT):
+def kosten(i, j, k, gD, gT, wD, wT,numbers):
     #i j k sind numbers[i,j,k] zb(Knoten 5,3,6)
     warteKostenT = 0
     warteKostenD = 0
@@ -343,20 +404,7 @@ def kosten(i, j, k, gD, gT, wD, wT):
 
     return cost
 
-def direkteTruckKosten(ab,gT):
-    dkm = np.zeros(shape=(len(numbers),len(numbers)))
-
-    #direkte Abstände in numbers eintragen (weite[i] hat schon kosten drin)
-    for i in range(len(numbers)-1):
-        dkm[numbers[i]][numbers[i+1]]=weite[i]
-
-    #alle anderen abstände eintragen (bögen im Hilfsgraph) abstände werden kumuliert mit jeder weiteren Pos
-    for j in range(len(numbers)-2):
-        for k in range (j+1,len(numbers)-1):
-            dkm[numbers[j]][numbers[k+1]]=dkm[numbers[j]][numbers[k]]+dkm[numbers[k]][numbers[k+1]]
-    return dkm
-
-def findingshortP():
+def findingshortP(numbers,jKnotenM):
     
     P = [None] * len(numbers)
     V = [9999] * len(numbers)
@@ -366,7 +414,7 @@ def findingshortP():
 
     #dijkstra
     for k in range(1,len(numbers)):
-        direkt = dkm[numbers[k-1]][numbers[k]] + V[numbers[k-1]]
+        direkt = ab[numbers[k-1]][numbers[k]]/gT + V[numbers[k-1]]
         indirekt = 9999
         finalI = 0
         finalJ = 0
@@ -375,7 +423,7 @@ def findingshortP():
             #wenn es kein J gibt, dann gibt es auch keinen Drohnenflug
             if math.isnan(tmpJ):
                 continue
-            tmpJcost = V[numbers[i]] + kosten(numbers[i], int(tmpJ), numbers[k], gD, gT, wD, wT)
+            tmpJcost = V[numbers[i]] + kosten(numbers[i], int(tmpJ), numbers[k], gD, gT, wD, wT,numbers)
             #bester Drohnenflug? bzw bestes J?
             if tmpJcost < indirekt:
                 indirekt = tmpJcost
@@ -418,7 +466,11 @@ def findingshortP():
 
     return P,V 
 
-def drohnenGraph(H):
+def drohnenGraph(H,V):
+    #kopieren der Knoten
+    H = G.__class__()
+    H.add_nodes_from(G)
+    
     node_list2 = ['X','A','B','C','D','E','F'] 
     nx.draw_networkx_nodes(H,pos)
     nx.draw_networkx_labels(H,pos,font_size=10, font_family="sans-serif")
@@ -429,11 +481,11 @@ def drohnenGraph(H):
                 #X gleich X_0 
                 if j==len(M_X[0])-1:
                     H.add_edges_from([(node_list2[i],node_list2[0])])
-                    nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list2[i],node_list2[0]): str(int(round(ab[i][0]/gD,0))) +'s' })
+                    nx.draw_networkx_edge_labels(H,pos,edge_labels={(node_list2[i],node_list2[0]): str(int(round(ab[i][0]/gD,0))) +'s' })
                 else:
                     H.add_edges_from([(node_list2[i],node_list2[j])])
-                    nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list2[i],node_list2[j]):  str(int(round(ab[i][j]/gD,0))) +'s' })
-                nx.draw_networkx_edges(H,pos,edge_color="b")
+                    nx.draw_networkx_edge_labels(H,pos,edge_labels={(node_list2[i],node_list2[j]):  str(int(round(ab[i][j]/gD,0))) +'s' })
+                nx.draw_networkx_edges(H,pos,edge_color="b",style='dotted')
                 
             #Truckpfeil
             if M_X[i][j]=='T':
@@ -441,11 +493,11 @@ def drohnenGraph(H):
                 if j==len(M_X[0])-1:
                     liste=[[node_list2[i],node_list2[0]]]
                     nx.draw_networkx_edges(H,pos,edge_color="y",edgelist=liste )
-                    nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list2[i],node_list2[0]):str(int(round(ab[i][0]/gT,0))) +'s' })
+                    nx.draw_networkx_edge_labels(H,pos,edge_labels={(node_list2[i],node_list2[0]):str(int(round(ab[i][0]/gT,0))) +'s' })
                 else:
                     liste=[[node_list2[i],node_list2[j]]]
                     nx.draw_networkx_edges(H,pos,edge_color="y",edgelist=liste )
-                    nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list2[i],node_list2[j]): str(int(round(ab[i][j]/gT,0))) +'s' })
+                    nx.draw_networkx_edge_labels(H,pos,edge_labels={(node_list2[i],node_list2[j]): str(int(round(ab[i][j]/gT,0))) +'s' })
 
     offset =15
     pos_labels = {}
@@ -462,11 +514,7 @@ def drohnenGraph(H):
         else:
             labels[key]= int(round(V[r]))
         r=r+1
-    nx.draw_networkx_labels(H,pos=pos_labels,labels=labels,fontsize=2)                 
-    
-    global f2
-    f2=plt.figure(2)
-
+    nx.draw_networkx_labels(H,pos=pos_labels,labels=labels,fontsize=2)               
 
 def setMatrix(m,y,x,sign):
 
@@ -524,9 +572,31 @@ def copyMatrix(kM,copy):
     elif kM == '7':
         M_X=deepcopy(stitcher)
 
+def null_setzen():
+    global M_X0
+    global M_A
+    global M_B
+    global M_C
+    global M_D
+    global M_E
+    global M_F
+    global M_X
+    M_X0= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+    M_X= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+    M_A= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+    M_B= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+    M_C= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+    M_D= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+    M_E= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
+    M_F= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
 
 
-
+G = nx.MultiDiGraph(format='png', directed=True)
+H = nx.MultiDiGraph(format='png', directed=True)
+I = nx.MultiDiGraph(format='png', directed=True)
+J = nx.MultiDiGraph(format='png', directed=True)
+K = nx.MultiDiGraph(format='png', directed=True)
+L = nx.MultiDiGraph(format='png', directed=True)
 
 
 node_list = ['X','A','B','C','D','E','F'] 
@@ -540,52 +610,55 @@ wT=12
 
 row_labels = ['X','A', 'B', 'C', 'D', 'E', 'F', 'X']
 column_labels = ['X','A', 'B', 'C', 'D', 'E', 'F', 'X']
-#Legende
-#ha= Hilfsmatrix entspricht hilfsgraphen mit drohnenrouten
-#ab= Alle abstände zwischen allen Knoten
-#kostenM= hilfsgraph mit Kostenfunktion
-#jKnotenM= Knotenmatrix (alle Knoten(j) die für position (i,k) verwendet werden)
-#direkteKostenmatrix= ab/truckkosten für direkte nachbarn
-#billigstekostenMatrix= ha/kosten für alle drohnenfahrten
 
-weite,node_list=plot_weighted_graph(node_list,pos)
+M_X0= [] 
+M_X= [] 
+M_A= [] 
+M_B= [] 
+M_C= [] 
+M_D= [] 
+M_E= [] 
+M_F= []
+
+#Legende
+    #ha= Hilfsmatrix entspricht hilfsgraphen mit drohnenrouten
+    #ab= Alle abstände zwischen allen Knoten
+    #kostenM= hilfsgraph mit Kostenfunktion
+    #jKnotenM= Knotenmatrix (alle Knoten(j) die für position (i,k) verwendet werden)
+    #direkteKostenmatrix= ab/truckkosten für direkte nachbarn
+    #billigstekostenMatrix= ha/kosten für alle drohnenfahrten
+
+#random insertion
+weite,node_list=plot_weighted_graph(node_list,pos) #H befüllen
 numbers=umschreiben(node_list)
 ab= abstaende(numbers)
+ha,jKnotenM,kostenM = hilfsgraph(weite,numbers,ab)
+null_setzen()
+P,V = findingshortP(numbers,jKnotenM)
+f2=plt.figure('random Drohnentour')
+drohnenGraph(H,V)
+
 
 #K-nearest neighbour 
-#TODO kritscher hase, niklas: 2 numbers ist gefährlich
-#numbers,weite = knn()
+numbers2,weite2 = knn()
+ha2,jKnotenM2,kostenM2 = hilfsgraph(weite2,numbers2,ab)
+null_setzen()
+P2,V2 = findingshortP(numbers2,jKnotenM2)
+f3=plt.figure('knn Drohnentour')
+drohnenGraph(J,V2)
+
+
 #K-cheapest insertion
-#numbers,weite =kci(numbers)
-cheapest_insertion_numbers ,cheapest_insertion_weite =kci(numbers)
-print('kci:')
-print(cheapest_insertion_numbers)
-print(cheapest_insertion_weite)
+numbers3, weite3 =kci(numbers)
+ha3,jKnotenM3,kostenM3 = hilfsgraph(weite3,numbers3,ab)
+null_setzen()
+P3,V3 = findingshortP(numbers3,jKnotenM3)
+f6=plt.figure('kci Drohnentour')
+drohnenGraph(L,V3)
 
-
-ha,jKnotenM,kostenM = hilfsgraph(weite,numbers,ab)
-dkm=direkteTruckKosten(ab,gT)
-
-
-M_X0= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
-M_X= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
-M_A= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
-M_B= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
-M_C= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
-M_D= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
-M_E= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
-M_F= [['/' for x in range(len(numbers))] for y in range(len(numbers))] 
-
-
-P,V = findingshortP()
 
 #pandas
 pd.options.display.float_format = '{:0.0f}'.format
-print('')
-
-dfdkm = pd.DataFrame(dkm, columns=column_labels, index=row_labels)
-print('dkm',dfdkm, sep='\n')
-
 print('')
 
 dfab = pd.DataFrame(ab, columns=column_labels, index=row_labels)
@@ -615,7 +688,7 @@ print('')
 dfV = pd.DataFrame(V, columns=['X'], index=row_labels)
 print('V',dfV.T, sep='\n')
 print('')
-drohnenGraph(H)
+
 
 dfM_X0 = pd.DataFrame(M_X0, columns=column_labels, index=row_labels)
 dfM_X = pd.DataFrame(M_X, columns=column_labels, index=row_labels)
@@ -634,5 +707,6 @@ print('M_D',dfM_D, sep='\n')
 print('M_E',dfM_E, sep='\n')
 print('M_F',dfM_F, sep='\n')
 print('M_X',dfM_X, sep='\n')
+
 
 plt.show()
