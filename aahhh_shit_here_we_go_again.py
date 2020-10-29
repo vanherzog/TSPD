@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-from matplotlib import interactive
 import networkx as nx
 import numpy as np
 import math
@@ -12,7 +11,6 @@ def plot_weighted_graph(node_list,pos):
     
     #random nodelist
     f1=plt.figure('Random')
-
     
     copy=node_list.copy()
     depot=copy[:1]
@@ -27,7 +25,6 @@ def plot_weighted_graph(node_list,pos):
     for node,node2 in zip(node_list,copy):
         G.add_node(node,pos=pos[node])
         G.add_edges_from([(node,node2)])
-
 
 
     #edge range
@@ -48,16 +45,9 @@ def plot_weighted_graph(node_list,pos):
     nx.draw_networkx_labels(G,pos,font_size=10, font_family="sans-serif")
     nx.draw_networkx_edges(G,pos)
     nx.draw_networkx_edge_labels(G,pos,edge_labels={(node_list[counter],copy[counter]):weite[counter]})
-
+    
     weite.insert(len(weite),None)
 
-    
-
-    print(node_list)
-    print(weite)
-    
-
-    
     return weite,node_list
 
 
@@ -88,8 +78,6 @@ def hilfsgraph(weite, numbers, ab):
     ha = np.zeros(shape=(len(numbers),len(numbers)))
     #Kostenmatrix
     kostenM = np.zeros(shape=(len(numbers),len(numbers)))
-    print(len(ha[0]))
-    print(len(ha))
     for i in range (len(numbers)):
         for j in range (len(numbers)):
             ha[i][j] = None
@@ -279,25 +267,26 @@ def kci(numbers):
     newWeite.append(round( ab[ new[len(new)-2] ][ new[len(new)-1] ] ,1))
     newWeite.append(None)
 
-    print(new)
-    print(newWeite)
-    print(newWeiteInnen)
-    print(newWeiteAussen)
     #graphen konstruieren
-  
+    edgelistAussen=[]
+    edgelistInnen=[]
     #äußerer Graph
     for k in range(len(newWeite)-2):
         K.add_edges_from([(OG[new[k]],OG[new[k+1]])])
         nx.draw_networkx_edge_labels(K,pos,edge_labels={(OG[new[k]],OG[new[k+1]]): str(int(round(newWeite[k],0))) })
-    K.add_edges_from([(OG[new[len(new)-2]],OG[new[0]])])
-    nx.draw_networkx_edges(K,pos,edge_color="b",style='dashdot')
-    G.clear()
+        edgelistAussen.append([OG[new[k]],OG[new[k+1]]])
+
+    nx.draw_networkx_edges(K,pos,edgelist=edgelistAussen,edge_color="b",)
+
     #innerer Graph
-    for k in range(len(newWeiteInnen)-1):
-        K.add_edges_from([(OG[new[k]],OG[new[k+2]])])   
-        nx.draw_networkx_edge_labels(K,pos,edge_labels={(OG[new[k]],OG[new[k+2]]): str(int(round(newWeiteInnen[k],0))) })
-        k+=1
-    nx.draw_networkx_edges(K,pos,edge_color="g",style='dotted')  
+    for k in range(6):
+        if k % 2 == 0:
+            K.add_edges_from([(OG[new[k]],OG[new[k+2]])])   
+            edgelistInnen.append([OG[new[k]],OG[new[k+2]]])
+    #letzte Kante
+    K.add_edges_from([(OG[new[len(new)-2]],OG[new[0]])])
+    edgelistInnen.append([OG[new[len(new)-2]],OG[new[0]]])
+    nx.draw_networkx_edges(K,pos,edgelist=edgelistInnen,edge_color="g")  
 
     nx.draw_networkx_nodes(K,pos)
     nx.draw_networkx_labels(K,pos,font_size=10, font_family="sans-serif")
@@ -312,7 +301,6 @@ def test(ha):
         for j in range (len(ha)):
             if ha[i][j]!=None:
                 edges.append((str(i),str(j)))
-    print(edges)
 
 
 
@@ -505,8 +493,6 @@ def drohnenGraph(H,V):
     labels={}
     r=0
     for key in keys:
-        
-        print(key)
         x, y = pos[key]
         pos_labels[key] = (x, y+offset)
         if key == 'X':
