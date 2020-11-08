@@ -4,6 +4,7 @@ import numpy as np
 import math
 import pandas as pd
 from copy import deepcopy
+import random
  
 
 
@@ -161,9 +162,86 @@ def abstaende(numbers):
             ab[a][b]= round(math.hypot( round(abs( xcoord[a]-xcoord[b]  ),1) ,round(abs(  ycoord[a]-ycoord[b] ),1) ),1)
     return ab
 
-#k-nearest Neighbour = ändert die Reihenfolge von Numbers und dementsprechend auch weite weil es neue Nachbarn gibt
+#K-nearest Neighbour = ändert die Reihenfolge von Numbers und dementsprechend auch weite weil es neue Nachbarn gibt
 def knn():
-    f4=plt.figure('knn')
+    f7=plt.figure('knn')
+    #graph referenzieren
+    global I
+    I = G.__class__()
+    I.add_nodes_from(G)
+
+    OG = ['X','A','B','C','D','E','F']
+    #neue Numbers & weite
+    new = []
+    newWeite = []
+    #Depot ist IMMER am Anfang
+    new.append(0)
+    best1 = deepcopy(999)
+    best2 = deepcopy(999)
+    save1 = ''
+    save2  = ''
+    i = 0
+    #Ich appende bei new immer Sachen dazu nach jedem Durchlauf bis es so lang ist wie OG
+    while len(new) +1 < len(OG):
+        #alle Knoten durchlaufen um den nähesten zu finden
+        for j in range (len(OG)):
+            #Abstand ausrechnen
+            tbest = ab[i][j]
+            #Wenn der aktuelle Knoten(tbest) näher ist als der bisher gespeicherte(best) und dieser Knoten noch nicht hinzugefügt wurde
+            if tbest <= best1 and j not in new:
+                best2 = deepcopy(best1)
+                best1 = deepcopy(tbest)
+                save2 = deepcopy(save1)
+                save1 = deepcopy(j)
+            elif tbest > best1 and tbest <= best2 and j not in new:
+                best2 = deepcopy(tbest)
+                save2 = deepcopy(j)
+        #Wenn alle Knoten durchgelaufen wurden, random einen der zwei Nähesten Knoten auswhälen und hinzufügen
+        save = [save1, save2]
+        best = [best1, best2]
+        a = [0,1]
+        #random eines der zwei nähesten Nachbarn auswählen
+        zahl = random.choice(a)
+        new.append(save[zahl])
+        newWeite.append(best[zahl])
+        best1 = deepcopy(999)
+        best2 = deepcopy(999)
+        save1 = ''
+        save2 = ''
+        #Jetzt für den neu zugefügten Knoten, wieder den nähesten suchen
+        i = save[zahl]
+    #den letzten hinzufügen
+    for l in range (len(OG)):
+        #Letzten Knoten finden der nicht hinzugefügt wurde
+        if l not in new:
+            #Abstand ausrechnen
+            best = ab[i][l]
+            newWeite.append(best)
+            new.append(l)
+    #Depot ist IMMER das Ende
+    new.append(7)
+    #Die letzte Enfernung zum Depot hinzufügen und NONE weil vom ENDDEPOT(X) zum ANFANGSDEPOT(XO) kein Abstand mehr ist
+    newWeite.append(ab[l][7])
+    newWeite.append(None)
+    px = 'newWeite: ' + str(newWeite) + '|| new: ' + str(new)
+    print(px)
+    #graphen konstruieren
+    for k in range(len(OG)-1):
+        M.add_edges_from([(OG[new[k]],OG[new[k+1]])])
+        nx.draw_networkx_edge_labels(N,pos,edge_labels={(OG[new[k]],OG[new[k+1]]): str(int(round(newWeite[k]/gT,0))) })
+    #letzte kante
+    M.add_edges_from([(OG[new[len(new)-2]],OG[0])])
+    nx.draw_networkx_edge_labels(N,pos,edge_labels={(OG[new[len(new)-2]],OG[0]): str(int(round(newWeite[len(newWeite)-2]/gT,0))) })
+    
+    nx.draw_networkx_nodes(M,pos)
+    nx.draw_networkx_labels(M,pos,font_size=10, font_family="sans-serif")
+    nx.draw_networkx_edges(M,pos)
+                  
+    return new, newWeite
+
+    #nearest Neighbour = ändert die Reihenfolge von Numbers und dementsprechend auch weite weil es neue Nachbarn gibt
+def nn():
+    f4=plt.figure('nn')
     #graph referenzieren
     global I
     I = G.__class__()
@@ -201,10 +279,10 @@ def knn():
     #graphen konstruieren
     for k in range(len(OG)-1):
         I.add_edges_from([(OG[new[k]],OG[new[k+1]])])
-        nx.draw_networkx_edge_labels(J,pos,edge_labels={(OG[new[k]],OG[new[k+1]]): str(int(round(newWeite[k],0))) })
+        nx.draw_networkx_edge_labels(J,pos,edge_labels={(OG[new[k]],OG[new[k+1]]): str(int(round(newWeite[k]/gT,0))) })
     #letzte kante
     I.add_edges_from([(OG[new[len(new)-2]],OG[0])])
-    nx.draw_networkx_edge_labels(J,pos,edge_labels={(OG[new[len(new)-2]],OG[0]): str(int(round(newWeite[len(newWeite)-2],0))) })
+    nx.draw_networkx_edge_labels(J,pos,edge_labels={(OG[new[len(new)-2]],OG[0]): str(int(round(newWeite[len(newWeite)-2]/gT,0))) })
     
     nx.draw_networkx_nodes(I,pos)
     nx.draw_networkx_labels(I,pos,font_size=10, font_family="sans-serif")
@@ -392,7 +470,7 @@ def kosten(i, j, k, gD, gT, wD, wT,numbers):
 
     return cost
 
-def findingshortP(numbers,jKnotenM):
+def dijkstra(numbers,jKnotenM, kostenM):
     
     P = [None] * len(numbers)
     V = [9999] * len(numbers)
@@ -402,7 +480,8 @@ def findingshortP(numbers,jKnotenM):
 
     #dijkstra
     for k in range(1,len(numbers)):
-        direkt = ab[numbers[k-1]][numbers[k]]/gT + V[numbers[k-1]]
+        #in kostenM sind auch direkte Nachbarn eingetragen
+        direkt = kostenM[numbers[k-1]][numbers[k]] + V[numbers[k-1]]
         indirekt = 9999
         finalI = 0
         finalJ = 0
@@ -411,7 +490,7 @@ def findingshortP(numbers,jKnotenM):
             #wenn es kein J gibt, dann gibt es auch keinen Drohnenflug
             if math.isnan(tmpJ):
                 continue
-            tmpJcost = V[numbers[i]] + kosten(numbers[i], int(tmpJ), numbers[k], gD, gT, wD, wT,numbers)
+            tmpJcost = V[numbers[i]] + kostenM[numbers[i]][numbers[k]]
             #bester Drohnenflug? bzw bestes J?
             if tmpJcost < indirekt:
                 indirekt = tmpJcost
@@ -583,6 +662,8 @@ I = nx.MultiDiGraph(format='png', directed=True)
 J = nx.MultiDiGraph(format='png', directed=True)
 K = nx.MultiDiGraph(format='png', directed=True)
 L = nx.MultiDiGraph(format='png', directed=True)
+M = nx.MultiDiGraph(format='png', directed=True)
+N = nx.MultiDiGraph(format='png', directed=True)
 
 
 node_list = ['X','A','B','C','D','E','F'] 
@@ -618,19 +699,20 @@ M_F= []
 weite,node_list=plot_weighted_graph(node_list,pos) #H befüllen
 numbers=umschreiben(node_list)
 ab= abstaende(numbers)
-ha,jKnotenM,kostenM = hilfsgraph(weite,numbers,ab)
+ha,jKnotenM,kostenM1 = hilfsgraph(weite,numbers,ab)
 null_setzen()
-P,V = findingshortP(numbers,jKnotenM)
+P,V = dijkstra(numbers,jKnotenM, kostenM1)
+print(V)
 f2=plt.figure('random Drohnentour')
 drohnenGraph(H,V)
 
 
-#K-nearest neighbour 
-numbers2,weite2 = knn()
+#nearest neighbour 
+numbers2,weite2 = nn()
 ha2,jKnotenM2,kostenM2 = hilfsgraph(weite2,numbers2,ab)
 null_setzen()
-P2,V2 = findingshortP(numbers2,jKnotenM2)
-f3=plt.figure('knn Drohnentour')
+P2,V2 = dijkstra(numbers2,jKnotenM2, kostenM2)
+f3=plt.figure('nn Drohnentour')
 drohnenGraph(J,V2)
 
 
@@ -638,10 +720,17 @@ drohnenGraph(J,V2)
 numbers3, weite3 =kci(numbers)
 ha3,jKnotenM3,kostenM3 = hilfsgraph(weite3,numbers3,ab)
 null_setzen()
-P3,V3 = findingshortP(numbers3,jKnotenM3)
+P3,V3 = dijkstra(numbers3,jKnotenM3,kostenM3)
 f6=plt.figure('kci Drohnentour')
 drohnenGraph(L,V3)
 
+#K-nearest neighbour
+numbers4,weite4 = knn()
+ha4,jKnotenM4,kostenM4 = hilfsgraph(weite4,numbers4,ab)
+null_setzen()
+P4,V4 = dijkstra(numbers4,jKnotenM4, kostenM4)
+f8=plt.figure('knn Drohnentour')
+drohnenGraph(N,V4)
 
 #pandas
 pd.options.display.float_format = '{:0.0f}'.format
@@ -657,13 +746,13 @@ print('ha',dfha, sep='\n')
 
 print('')
 
-dfkostenM = pd.DataFrame(kostenM, columns=column_labels, index=row_labels)
-print("Kosten" , dfkostenM, sep='\n')
+dfkostenM = pd.DataFrame(kostenM2, columns=column_labels, index=row_labels)
+print("Hilfsgraph" , dfkostenM, sep='\n')
 
 print('')
 
-dfjKnotenM = pd.DataFrame(jKnotenM, columns=column_labels, index=row_labels)
-print('Knotenmatrix',dfjKnotenM, sep='\n')
+dfjKnotenM = pd.DataFrame(jKnotenM2, columns=column_labels, index=row_labels)
+print('Knotenmatrix zum Hilfsgraph',dfjKnotenM, sep='\n')
 
 print('')
 print(numbers)
@@ -674,6 +763,7 @@ print('')
 dfV = pd.DataFrame(V, columns=['X'], index=row_labels)
 print('V',dfV.T, sep='\n')
 print('')
+
 
 
 dfM_X0 = pd.DataFrame(M_X0, columns=column_labels, index=row_labels)
